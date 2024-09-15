@@ -1,26 +1,32 @@
-import {categoria} from "../models/Categoria.js";
+import { categoria } from "../models/Categoria.js";
 
 class CategoriaController {
 
-    static async getCategorias(req, res) {
+    static async getCategorias(req, res, next) {
 
         try {
             const listaCategorias = await categoria.find({})
-            res.status(200).json(listaCategorias)
+            res.status(200).json(listaCategorias);
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição!` });
+            next(error);
         }
 
     }
 
-    static async getCategoriaId(req, res) {
+    static async getCategoriaId(req, res, next) {
 
         try {
             const id = req.params.id
             const categoriaEncontrada = await categoria.findById(id)
-            res.status(200).json(categoriaEncontrada)
+
+            if (categoriaEncontrada !== null) {
+                res.status(200).send(categoriaEncontrada);
+            } else {
+                res.status(404).send({ message: `Id da Categoria não localizado!` });
+            }
+
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição da categoria!` });
+            next(error)
         }
 
     }
@@ -40,7 +46,7 @@ class CategoriaController {
         try {
             const id = req.params.id
             await categoria.findByIdAndUpdate(id, req.body)
-            res.status(200).json({message: "Categoria atualizada!"})
+            res.status(200).json({ message: "Categoria atualizada!" })
         } catch (error) {
             res.status(500).json({ message: `${error.message} - Falha na requisição da categoria!` });
         }
@@ -52,7 +58,7 @@ class CategoriaController {
         try {
             const id = req.params.id
             await categoria.findByIdAndDelete(id)
-            res.status(200).json({message: "Categoria excluída!"})
+            res.status(200).json({ message: "Categoria excluída!" })
         } catch (error) {
             res.status(500).json({ message: `${error.message} - Falha na exclusão da categoria!` });
         }
