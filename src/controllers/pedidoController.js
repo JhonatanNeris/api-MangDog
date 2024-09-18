@@ -4,41 +4,41 @@ import { produto } from '../models/Produto.js'
 
 class PedidoController {
 
-    static async getPedidos(req, res) {
+    static async getPedidos(req, res, next) {
 
         try {
             const listaProdutos = await pedido.find({})
             res.status(200).json(listaProdutos)
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição!` });
+            next(error);
         }
 
     }
 
-    static async getPedidosPreparo(req, res) {
+    static async getPedidosPreparo(req, res, next) {
 
         try {
-            const listaProdutos = await pedido.find({status: 'em preparo'})
+            const listaProdutos = await pedido.find({ status: 'em preparo' })
             res.status(200).json(listaProdutos)
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição!` });
+            next(error);
         }
 
     }
 
-    static async getPedidoId(req, res) {
+    static async getPedidoId(req, res, next) {
 
         try {
             const id = req.params.id
             const pedidoEncontrado = await pedido.findById(id)
             res.status(200).json(pedidoEncontrado)
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição da pedido!` });
+            next(error);
         }
 
     }
 
-    static async postPedido(req, res) {
+    static async postPedido(req, res, next) {
         try {
             const { nomeCliente, itens, tipoPedido } = req.body;
 
@@ -73,30 +73,31 @@ class PedidoController {
 
             res.status(201).json({ message: 'Cadastrado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha ao cadastrar pedido!` });
+            next(error);
         }
     }
 
-    static async putPedido(req, res) {
+    static async putPedido(req, res, next) {
 
         try {
             const id = req.params.id
             await pedido.findByIdAndUpdate(id, req.body)
             res.status(200).json({ message: "Pedido atualizado!" })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição do pedido!` });
+            next(error);
         }
 
     }
 
-    static async deletePedido(req, res) {
+    static async deletePedido(req, res, next) {
 
         try {
             const id = req.params.id
             await pedido.findByIdAndDelete(id)
             res.status(200).json({ message: "Pedido excluído!" })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na exclusão do pedido!` });
+            // res.status(500).json({ message: `${error.message} - Falha na exclusão do pedido!` });
+            next(error);
         }
 
     }

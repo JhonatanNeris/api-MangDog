@@ -2,7 +2,8 @@ import express from 'express'
 import conectaNaDatabase from './config/dbConnect.js'
 import routes from './routes/index.js'
 import cors from 'cors';
-import mongoose from 'mongoose';
+import manipuladorDeErros from './middlewares/manipuladorDeErros.js'
+import manipulador404 from './middlewares/manipulador404.js';
 
 
 const conexao = await conectaNaDatabase()
@@ -22,14 +23,10 @@ app.use(cors());
 
 routes(app)
 
-app.use((error, req, res, next) => {
-    if (error instanceof mongoose.Error.CastError) {
-        res.status(400).send({ message: `Um ou mais dados fornecidos estão incorretos!` });
-    } else {
-        res.status(500).json({ message: ` ${error.message} - Erro interno de servidor!` });
-    }
+//middleware de Rota 404
+app.use(manipulador404)
 
-})
-
+//middleware de erro
+app.use(manipuladorDeErros)
 
 export default app;

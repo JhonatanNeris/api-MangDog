@@ -3,30 +3,30 @@ import { produto } from '../models/Produto.js'
 
 class ProdutoController {
 
-    static async getProdutos(req, res) {
+    static async getProdutos(req, res, next) {
 
         try {
             const listaProdutos = await produto.find({})
             res.status(200).json(listaProdutos)
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição!` });
+            next(error);
         }
 
     }
 
-    static async getProdutoId(req, res) {
+    static async getProdutoId(req, res, next) {
 
         try {
             const id = req.params.id
             const produtoEncontrado = await produto.findById(id)
             res.status(200).json(produtoEncontrado)
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição da produto!` });
+            next(error);
         }
 
     }
 
-    static async postProdutos(req, res) {
+    static async postProdutos(req, res, next) {
 
         const novoProduto = req.body
 
@@ -37,30 +37,30 @@ class ProdutoController {
             const produtoCriado = await produto.create(produtoCompleto)
             res.status(201).json({ message: 'Cadastrado com sucesso!', produto: produtoCriado })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha ao cadastrar produto!` });
+            next(error);
         }
     }
 
-    static async putProduto(req, res) {
+    static async putProduto(req, res, next) {
 
         try {
             const id = req.params.id
             await produto.findByIdAndUpdate(id, req.body)
             res.status(200).json({ message: "Produto atualizado!" })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição do produto!` });
+            next(error);
         }
 
     }
 
-    static async deleteProduto(req, res) {
+    static async deleteProduto(req, res, next) {
 
         try {
             const id = req.params.id
             await produto.findByIdAndDelete(id)
             res.status(200).json({ message: "Produto excluído!" })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na exclusão do produto!` });
+            next(error);
         }
 
     }

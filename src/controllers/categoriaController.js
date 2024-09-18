@@ -1,3 +1,5 @@
+import e from "express";
+import NaoEncontrado from "../erros/NaoEncontrado.js";
 import { categoria } from "../models/Categoria.js";
 
 class CategoriaController {
@@ -22,7 +24,7 @@ class CategoriaController {
             if (categoriaEncontrada !== null) {
                 res.status(200).send(categoriaEncontrada);
             } else {
-                res.status(404).send({ message: `Id da Categoria não localizado!` });
+                next(new NaoEncontrado(`Id da Categoria não localizado!`))
             }
 
         } catch (error) {
@@ -31,36 +33,48 @@ class CategoriaController {
 
     }
 
-    static async postCategorias(req, res) {
+    static async postCategorias(req, res, next) {
 
         try {
             const novaCategoria = await categoria.create(req.body)
             res.status(201).json({ message: 'Cadastrado com sucesso!', categoria: novaCategoria })
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha ao cadastrar categoria!` });
+            next(error);
         }
     }
 
-    static async putCategoria(req, res) {
+    static async putCategoria(req, res, next) {
 
         try {
             const id = req.params.id
-            await categoria.findByIdAndUpdate(id, req.body)
-            res.status(200).json({ message: "Categoria atualizada!" })
+            const categoriaAtualizada = await categoria.findByIdAndUpdate(id, req.body)
+
+            if (categoriaAtualizada !== null) {
+                res.status(200).json({ message: "Categoria atualizada!" })
+            } else {
+                next(new NaoEncontrado('Id da categoria não localizado'))
+            }
+
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na requisição da categoria!` });
+            next(error);
         }
 
     }
 
-    static async deleteCategoria(req, res) {
+    static async deleteCategoria(req, res, next) {
 
         try {
             const id = req.params.id
-            await categoria.findByIdAndDelete(id)
-            res.status(200).json({ message: "Categoria excluída!" })
+            const categoriaApagada = await categoria.findByIdAndDelete(id)
+
+            if(categoriaApagada !== null){
+                res.status(200).json({ message: "Categoria excluída!" })
+            }else {
+                next(new NaoEncontrado('Id da categoria não localizado'))
+            }
+            
         } catch (error) {
-            res.status(500).json({ message: `${error.message} - Falha na exclusão da categoria!` });
+            next(error);
         }
 
     }
