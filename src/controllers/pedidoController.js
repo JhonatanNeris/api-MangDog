@@ -27,12 +27,19 @@ class PedidoController {
     static async getPedidosFiltro(req, res, next) {
 
         try {
-            const { nomeCliente, status } = req.query
+            const { nomeCliente, status, minValorTotal, maxValorTotal } = req.query
 
             const busca = {}
 
-            if (nomeCliente) busca.nomeCliente = nomeCliente
+            if (nomeCliente) busca.nomeCliente = { $regex: nomeCliente, $options: "i" }
             if (status) busca.status = status
+
+            if(minValorTotal || maxValorTotal) busca.valorTotal = {}
+            
+            //GTE = Greater Than or Equal = Maior ou Igual 
+            if (minValorTotal) busca.valorTotal.$gte =  minValorTotal
+            //LTE = Less Than or Equal = Menor ou Igual 
+            if (maxValorTotal) busca.valorTotal.$lte = maxValorTotal
 
             const pedidoEncontrado = await pedido.find(busca)
 
@@ -70,7 +77,7 @@ class PedidoController {
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
 
-                if(item.adicionais.length > 0){
+                if (item.adicionais.length > 0) {
                     item.adicionais.map((adicional) => {
                         adicional.precoTotal = adicional.preco * adicional.quantidade
                         valorAdicionais += adicional.precoTotal
@@ -94,7 +101,7 @@ class PedidoController {
                 itens: itensProcessados
             };
 
-            console.log('PEdido completo',pedidoCompleto)
+            console.log('PEdido completo', pedidoCompleto)
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
