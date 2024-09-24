@@ -6,11 +6,11 @@ import UsuarioController from '../controllers/usuarioController.js'
 
 const routes = express.Router()
 
-// routes.get("/pedidos/", UsuarioController.getPedidos)
-// routes.get("/pedidos/preparo", UsuarioController.getPedidosPreparo)
-// routes.get("/pedidos/:id", UsuarioController.getPedidoId)
+routes.get("/usuarios/", UsuarioController.getUsuarios)
+// routes.get("/usuarios/preparo", UsuarioController.getusuariosPreparo)
+// routes.get("/usuarios/:id", UsuarioController.getPedidoId)
 routes.post("/usuarios/register/", UsuarioController.postUsuario)
-// routes.put("/pedidos/:id", UsuarioController.putPedido)
-// routes.delete("/pedidos/:id", UsuarioController.deletePedido)
+// routes.put("/usuarios/:id", UsuarioController.putPedido)
+// routes.delete("/usuarios/:id", UsuarioController.deletePedido)
 
 export default routes

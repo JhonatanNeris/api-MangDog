@@ -1,6 +1,4 @@
-import { categoria } from '../models/Categoria.js';
-import pedido from '../models/Pedido.js';
-import { produto } from '../models/Produto.js'
+import { pedido } from '../models/index.js';
 
 class PedidoController {
 
@@ -26,6 +24,30 @@ class PedidoController {
 
     }
 
+    static async getPedidosFiltro(req, res, next) {
+
+        try {
+            const { nomeCliente, status } = req.query
+
+            const busca = {}
+
+            if (nomeCliente) busca.nomeCliente = nomeCliente
+            if (status) busca.status = status
+
+            const pedidoEncontrado = await pedido.find(busca)
+
+            if (pedidoEncontrado !== null) {
+                res.status(200).send(pedidoEncontrado);
+            } else {
+                next(new NaoEncontrado(`Id do Pedido não localizado!`))
+            }
+
+        } catch (error) {
+            next(error)
+        }
+
+    }
+
     static async getPedidoId(req, res, next) {
 
         try {
@@ -47,12 +69,18 @@ class PedidoController {
 
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
-                item.adicionais.map((adicional) => {
-                    adicional.precoTotal = adicional.preco * adicional.quantidade
-                    valorAdicionais += adicional.precoTotal
-                    item.totalItem = (item.preco + valorAdicionais)
-                    return adicional
-                })
+
+                if(item.adicionais.length > 0){
+                    item.adicionais.map((adicional) => {
+                        adicional.precoTotal = adicional.preco * adicional.quantidade
+                        valorAdicionais += adicional.precoTotal
+                        item.totalItem = (item.preco + valorAdicionais)
+                        return adicional
+                    })
+                } else {
+                    item.totalItem = item.preco
+                }
+
                 item.precoTotal = item.totalItem * item.quantidade;
                 valorTotal += item.precoTotal;
                 return item; // Retornar o item processado
@@ -66,7 +94,7 @@ class PedidoController {
                 itens: itensProcessados
             };
 
-            console.log(pedidoCompleto)
+            console.log('PEdido completo',pedidoCompleto)
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);

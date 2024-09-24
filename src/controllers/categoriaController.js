@@ -1,6 +1,5 @@
-import e from "express";
 import NaoEncontrado from "../erros/NaoEncontrado.js";
-import { categoria } from "../models/Categoria.js";
+import { categoria } from "../models/index.js";
 
 class CategoriaController {
 
@@ -20,6 +19,27 @@ class CategoriaController {
         try {
             const id = req.params.id
             const categoriaEncontrada = await categoria.findById(id)
+
+            if (categoriaEncontrada !== null) {
+                res.status(200).send(categoriaEncontrada);
+            } else {
+                next(new NaoEncontrado(`Id da Categoria não localizado!`))
+            }
+
+        } catch (error) {
+            next(error)
+        }
+
+    }
+
+    static async getCategoriaFiltro(req, res, next) {
+        
+        try {
+            const nome = req.query.nome
+
+            const categoriaEncontrada = await categoria.find({
+                nome: nome
+            })
 
             if (categoriaEncontrada !== null) {
                 res.status(200).send(categoriaEncontrada);

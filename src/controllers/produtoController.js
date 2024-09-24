@@ -1,5 +1,4 @@
-import { categoria } from '../models/Categoria.js';
-import { produto } from '../models/Produto.js'
+import { categoria, produto } from '../models/index.js';
 
 class ProdutoController {
 
