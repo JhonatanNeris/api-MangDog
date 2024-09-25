@@ -4,9 +4,12 @@ import express from 'express'
 //CONTROLLER
 import PedidoController from '../controllers/pedidoController.js'
 
+//Middlewares
+import paginar from '../middlewares/paginar.js'
+
 const routes = express.Router()
 
-routes.get("/pedidos/", PedidoController.getPedidos)
+routes.get("/pedidos/", PedidoController.getPedidos, paginar)
 routes.get("/pedidos/preparo", PedidoController.getPedidosPreparo)
 routes.get("/pedidos/busca", PedidoController.getPedidosFiltro)
 routes.get("/pedidos/:id", PedidoController.getPedidoId)

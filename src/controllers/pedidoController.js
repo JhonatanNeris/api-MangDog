@@ -1,12 +1,17 @@
 import { pedido } from '../models/index.js';
+import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
 class PedidoController {
 
     static async getPedidos(req, res, next) {
 
         try {
-            const listaProdutos = await pedido.find({})
-            res.status(200).json(listaProdutos)
+            const listarPedidos = pedido.find()
+
+            req.resultado = listarPedidos
+
+            next()
+
         } catch (error) {
             next(error);
         }
@@ -34,10 +39,10 @@ class PedidoController {
             if (nomeCliente) busca.nomeCliente = { $regex: nomeCliente, $options: "i" }
             if (status) busca.status = status
 
-            if(minValorTotal || maxValorTotal) busca.valorTotal = {}
-            
+            if (minValorTotal || maxValorTotal) busca.valorTotal = {}
+
             //GTE = Greater Than or Equal = Maior ou Igual 
-            if (minValorTotal) busca.valorTotal.$gte =  minValorTotal
+            if (minValorTotal) busca.valorTotal.$gte = minValorTotal
             //LTE = Less Than or Equal = Menor ou Igual 
             if (maxValorTotal) busca.valorTotal.$lte = maxValorTotal
 
