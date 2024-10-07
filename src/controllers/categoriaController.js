@@ -41,8 +41,8 @@ class CategoriaController {
                 nome: nome
             })
 
-            if (categoriaEncontrada !== null) {
-                res.status(200).send(categoriaEncontrada);
+            if (categoriaEncontrada.length > 0) {
+                res.status(200).send({message: "Categoria encontrada!", categoriaEncontrada});
             } else {
                 next(new NaoEncontrado(`Id da Categoria não localizado!`))
             }

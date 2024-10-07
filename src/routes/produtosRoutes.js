@@ -4,12 +4,15 @@ import express from 'express'
 //CONTROLLER
 import ProdutoController from '../controllers/produtoController.js'
 
+//MIDDLEWARES
+import autenticarToken from '../middlewares/autenticarToken.js'
+
 const routes = express.Router()
 
-routes.get("/menu/produtos", ProdutoController.getProdutos)
-routes.get("/menu/produtos/:id", ProdutoController.getProdutoId)
-routes.post("/menu/produtos", ProdutoController.postProdutos)
-routes.put("/menu/produtos/:id", ProdutoController.putProduto)
-routes.delete("/menu/produtos/:id", ProdutoController.deleteProduto)
+routes.get("/menu/produtos", autenticarToken, ProdutoController.getProdutos)
+routes.get("/menu/produtos/:id", autenticarToken, ProdutoController.getProdutoId)
+routes.post("/menu/produtos", autenticarToken, ProdutoController.postProdutos)
+routes.put("/menu/produtos/:id", autenticarToken, ProdutoController.putProduto)
+routes.delete("/menu/produtos/:id", autenticarToken, ProdutoController.deleteProduto)
 
 export default routes

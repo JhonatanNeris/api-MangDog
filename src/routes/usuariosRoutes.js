@@ -8,7 +8,7 @@ const routes = express.Router()
 
 routes.get("/usuarios/", UsuarioController.getUsuarios)
 // routes.get("/usuarios/preparo", UsuarioController.getusuariosPreparo)
-// routes.get("/usuarios/:id", UsuarioController.getPedidoId)
+routes.post("/usuarios/login/", UsuarioController.loginUsuario)
 routes.post("/usuarios/register/", UsuarioController.postUsuario)
 // routes.put("/usuarios/:id", UsuarioController.putPedido)
 // routes.delete("/usuarios/:id", UsuarioController.deletePedido)
