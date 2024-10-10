@@ -3,11 +3,14 @@ import express from 'express'
 
 //CONTROLLER
 import UsuarioController from '../controllers/usuarioController.js'
+import autenticarToken from '../middlewares/autenticarToken.js'
 
 const routes = express.Router()
 
 routes.get("/usuarios/", UsuarioController.getUsuarios)
-// routes.get("/usuarios/preparo", UsuarioController.getusuariosPreparo)
+routes.get("/usuarios/validar-token", autenticarToken, (req, res) => {
+    return res.status(200).json({ user: req.usuario });
+})
 routes.post("/usuarios/login/", UsuarioController.loginUsuario)
 routes.post("/usuarios/register/", UsuarioController.postUsuario)
 // routes.put("/usuarios/:id", UsuarioController.putPedido)

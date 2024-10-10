@@ -8,7 +8,7 @@ function autenticarToken(req, res, next){
     const token = authHeader && authHeader.split(' ')[1]; // Extrai o token do header
 3
     if (!token) {
-        return res.status(401).json({ message: 'Acesso negado, token não fornecido!' });
+        return res.status(403).json({ message: 'Acesso negado, token não fornecido!' });
     }
 
     try {
@@ -19,7 +19,7 @@ function autenticarToken(req, res, next){
         // Chama o próximo middleware ou rota
         next(); 
     } catch (error) {
-        return res.status(403).json({ message: 'Token inválido ou expirado!' });
+        return res.status(401).json({ message: 'Token inválido ou expirado!' });
     }   
 
 }
