@@ -74,7 +74,7 @@ class PedidoController {
 
     static async postPedido(req, res, next) {
         try {
-            const { nomeCliente, itens, tipoPedido } = req.body;
+            const { nomeCliente, itens, tipoPedido, formaPagamento } = req.body;
 
             let valorTotal = 0;
             let valorAdicionais = 0
@@ -103,10 +103,11 @@ class PedidoController {
                 nomeCliente,
                 valorTotal,
                 tipoPedido,
+                formaPagamento,
                 itens: itensProcessados
             };
 
-            console.log('PEdido completo', pedidoCompleto)
+            // console.log('Pedido completo', pedidoCompleto)
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);

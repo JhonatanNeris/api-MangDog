@@ -41,6 +41,10 @@ const pedidoSchema = new mongoose.Schema({
         enum: ['comer aqui', 'para viagem'],
         required: true
     },
+    formaPagamento: {
+        type: String,
+        enum: ['débito', 'crédito', 'pix', 'dinheiro']
+    },
     itens: [itemPedidoSchema]
 }, { versionKey: false });
 
