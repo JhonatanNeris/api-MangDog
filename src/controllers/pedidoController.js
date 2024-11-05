@@ -46,13 +46,21 @@ class PedidoController {
             //LTE = Less Than or Equal = Menor ou Igual 
             if (maxValorTotal) busca.valorTotal.$lte = maxValorTotal
 
-            const pedidoEncontrado = await pedido.find(busca)
+            // const pedidoEncontrado = await pedido.find(busca)
 
-            if (pedidoEncontrado !== null) {
-                res.status(200).send(pedidoEncontrado);
-            } else {
-                next(new NaoEncontrado(`Id do Pedido não localizado!`))
-            }
+            req.resultado = pedido.find(busca)
+
+            next()
+
+            // if (pedidoEncontrado !== null) {
+
+            //     req.resultado = pedidoEncontrado
+
+            //     next()
+            //     // res.status(200).send(pedidoEncontrado);
+            // } else {
+            //     next(new NaoEncontrado(`Id do Pedido não localizado!`))
+            // }
 
         } catch (error) {
             next(error)
@@ -112,7 +120,7 @@ class PedidoController {
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
-            res.status(201).json({ message: 'Cadastrado com sucesso!', pedido: pedidoCriado });
+            res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
             next(error);
         }

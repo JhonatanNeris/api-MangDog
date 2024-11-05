@@ -12,7 +12,7 @@ const routes = express.Router()
 
 routes.get("/pedidos/", autenticarToken, PedidoController.getPedidos, paginar)
 routes.get("/pedidos/preparo", autenticarToken, PedidoController.getPedidosPreparo)
-routes.get("/pedidos/busca", autenticarToken, PedidoController.getPedidosFiltro)
+routes.get("/pedidos/busca", autenticarToken, PedidoController.getPedidosFiltro, paginar)
 routes.get("/pedidos/:id", autenticarToken, PedidoController.getPedidoId)
 routes.post("/pedidos/novo/", autenticarToken, PedidoController.postPedido)
 routes.put("/pedidos/:id", autenticarToken, PedidoController.putPedido)

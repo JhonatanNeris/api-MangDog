@@ -35,6 +35,8 @@ async function paginar(req, res, next) {
         }
 
     } catch (error) {
+        console.error("Erro no paginar:", error); // Log do erro
+
         next(error);
     }
 
