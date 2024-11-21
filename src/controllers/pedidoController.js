@@ -115,11 +115,16 @@ class PedidoController {
                 itens: itensProcessados
             };
 
-            // console.log('Pedido completo', pedidoCompleto)
+            console.log('Novo pedido')
+            console.log(pedidoCompleto)
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
+            if (!pedidoCriado) {
+                return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
+            }
+            
             res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
             next(error);
