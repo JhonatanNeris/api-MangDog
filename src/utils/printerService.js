@@ -49,11 +49,11 @@ export const printText = async (pedido) => {
    
     // Comando de corte
     printer.cut();
-
     // Finaliza a impressão
     await printer.execute();
+    //Limpar o buffer
+    printer.clear()
 
-    // printer.setStyles({ font: 'a' });
     console.log("Pedido impresso com sucesso!");
   } catch (error) {
     console.error("Erro ao imprimir o pedido:", error);
