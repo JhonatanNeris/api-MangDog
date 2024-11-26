@@ -9,7 +9,7 @@ import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
 // Função para enviar o pedido para o servidor de impressão local
 async function enviarParaImpressora(pedido) {
     try {
-        const response = await axios.post('http://localhost:3000/imprimir', { pedido }); // Substitua pelo IP do servidor local
+        const response = await axios.post('http://192.168.15.8:3000/imprimir', { pedido }); // Substitua pelo IP do servidor local
         console.log('Resposta do servidor de impressão:', response.data);
     } catch (error) {
         console.error('Erro ao enviar pedido para impressão:', error.message);
