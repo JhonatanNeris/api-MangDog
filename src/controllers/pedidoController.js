@@ -4,6 +4,18 @@ import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 // Impressora 
 import { printText } from '../utils/printerService.js';
 
+//Impressora Online
+import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
+// Função para enviar o pedido para o servidor de impressão local
+async function enviarParaImpressora(pedido) {
+    try {
+        const response = await axios.post('http://localhost:3000/imprimir', { pedido }); // Substitua pelo IP do servidor local
+        console.log('Resposta do servidor de impressão:', response.data);
+    } catch (error) {
+        console.error('Erro ao enviar pedido para impressão:', error.message);
+    }
+}
+
 class PedidoController {
 
     static async getPedidos(req, res, next) {
@@ -88,7 +100,7 @@ class PedidoController {
             const { nomeCliente, itens, tipoPedido, formaPagamento } = req.body;
 
             let valorTotal = 0;
-            
+
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
                 let valorAdicionais = 0
@@ -103,7 +115,7 @@ class PedidoController {
                 } else {
                     item.totalItem = item.preco
                 }
-                
+
 
                 item.precoTotal = item.totalItem * item.quantidade;
                 valorTotal += item.precoTotal;
@@ -126,13 +138,15 @@ class PedidoController {
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
             // Chamar a função para imprimir o pedido
-            await printText(pedidoCompleto);
+            // await printText(pedidoCompleto);
+            // Enviar o pedido para a impressora
+            await enviarParaImpressora(pedidoCompleto);
 
 
             if (!pedidoCriado) {
                 return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
             }
-            
+
             res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
             next(error);
