@@ -1,6 +1,9 @@
 import { pedido } from '../models/index.js';
 import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
+// Impressora 
+import { printText } from '../utils/printerService.js';
+
 class PedidoController {
 
     static async getPedidos(req, res, next) {
@@ -85,10 +88,10 @@ class PedidoController {
             const { nomeCliente, itens, tipoPedido, formaPagamento } = req.body;
 
             let valorTotal = 0;
-            let valorAdicionais = 0
-
+            
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
+                let valorAdicionais = 0
 
                 if (item.adicionais.length > 0) {
                     item.adicionais.map((adicional) => {
@@ -100,6 +103,7 @@ class PedidoController {
                 } else {
                     item.totalItem = item.preco
                 }
+                
 
                 item.precoTotal = item.totalItem * item.quantidade;
                 valorTotal += item.precoTotal;
@@ -115,10 +119,11 @@ class PedidoController {
                 itens: itensProcessados
             };
 
-            // console.log('Pedido completo', pedidoCompleto)
-
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
+
+            // Chamar a função para imprimir o pedido
+            await printText(pedidoCompleto);
 
             res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
