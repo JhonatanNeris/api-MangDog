@@ -61,7 +61,7 @@ class UsuarioController {
             permissao: usuarioEncontrado.permissao 
           },
           JWT_SECRET,
-          { expiresIn: '4h' } // Token expira em 1 hora
+          { expiresIn: '8h' } // Token expira em 8 hora
         );
 
         res.status(200).json({ message: "Usuário logado!", token })
