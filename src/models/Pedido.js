@@ -43,10 +43,15 @@ const pedidoSchema = new mongoose.Schema({
     },
     formaPagamento: {
         type: String,
-        enum: ['débito', 'crédito', 'pix', 'dinheiro']
+        enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto']
     },
     itens: [itemPedidoSchema]
-}, { versionKey: false });
+}, { versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+
+pedidoSchema.virtual('quantidadeItens').get(function() {
+    return this.itens.reduce((total, item) => total + item.quantidade, 0);
+});
+
 
 const pedido = mongoose.model("pedidos", pedidoSchema);
 
