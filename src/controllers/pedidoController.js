@@ -138,9 +138,9 @@ class PedidoController {
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
             // Chamar a função para imprimir o pedido
-            // await printText(pedidoCompleto);
+            await printText(pedidoCompleto);
             // Enviar o pedido para a impressora
-            await enviarParaImpressora(pedidoCompleto);
+            //await enviarParaImpressora(pedidoCompleto);
 
 
             if (!pedidoCriado) {

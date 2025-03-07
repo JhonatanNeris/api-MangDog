@@ -10,6 +10,12 @@ const printer = new ThermalPrinter({
 
 export const printText = async (pedido) => {
   try {
+    // 🔹 Verifica se a impressora está conectada antes de continuar
+    const isConnected = await printer.isPrinterConnected();
+    if (!isConnected) {
+      console.warn("Impressora não encontrada. O pedido será enviado sem impressão.");
+      return; // Sai da função sem travar a aplicação
+    }
 
     printer.alignLeft();
 
@@ -23,7 +29,7 @@ export const printText = async (pedido) => {
     printer.alignCenter();        
     printer.println(`ITENS DO PEDIDO\n`)
 
-    printer.alignLeft()
+    printer.alignLeft();
 
      // Imprimir os itens do pedido
     pedido.itens.forEach(item => {
@@ -35,11 +41,11 @@ export const printText = async (pedido) => {
         });
       }
 
-      if(item.obs){
-        printer.println(`Obs: ${item.obs}`)
+      if (item.obs) {
+        printer.println(`Obs: ${item.obs}`);
       }
 
-      printer.println("\n")
+      printer.println("\n");
     });
 
     printer.drawLine();    
@@ -51,8 +57,8 @@ export const printText = async (pedido) => {
     printer.cut();
     // Finaliza a impressão
     await printer.execute();
-    //Limpar o buffer
-    printer.clear()
+    // Limpar o buffer
+    printer.clear();
 
     console.log("Pedido impresso com sucesso!");
   } catch (error) {
