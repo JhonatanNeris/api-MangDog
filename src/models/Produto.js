@@ -17,7 +17,8 @@ const produtoSchema = new mongoose.Schema({
     preco: { type: Number, min: [0.1, 'O valor mínimo é R$ 0,1, R${VALUE} não é um valor válido.'], required: [true, "O preço do produto é obrigatório."] },
     categoria: { type: categoriaSchema, required: [true, "A categoria do produto é obrigatória."] },
     adicionais: [adicionalSchema],
-    disponivel: {type: Boolean, default: true}
+    disponivel: { type: Boolean, default: true },
+    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true }, 
 }, { versionKey: false });
 
 const produto = mongoose.model("produtos", produtoSchema);

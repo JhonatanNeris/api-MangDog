@@ -1,27 +1,23 @@
 import { pedido } from '../models/index.js';
+import NaoEncontrado from "../erros/NaoEncontrado.js";
 import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
 // Impressora 
 import { printText } from '../utils/printerService.js';
 
+//Mongoose
+import mongoose from "mongoose";
+
 //Impressora Online
 import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
 // Função para enviar o pedido para o servidor de impressão local
-async function enviarParaImpressora(pedido) {
-    try {
-        const response = await axios.post('http://192.168.15.8:3000/imprimir', { pedido }); // Substitua pelo IP do servidor local
-        console.log('Resposta do servidor de impressão:', response.data);
-    } catch (error) {
-        console.error('Erro ao enviar pedido para impressão:', error.message);
-    }
-}
 
 class PedidoController {
 
     static async getPedidos(req, res, next) {
 
         try {
-            const listarPedidos = pedido.find()
+            const listarPedidos = pedido.find({ clienteId: req.usuario.clienteId })
 
             req.resultado = listarPedidos
 
@@ -36,7 +32,8 @@ class PedidoController {
     static async getPedidosPreparo(req, res, next) {
 
         try {
-            const listaProdutos = await pedido.find({ status: 'em preparo' })
+            console.log(req.usuario)
+            const listaProdutos = await pedido.find({ clienteId: req.usuario.clienteId, status: 'em preparo' })
             res.status(200).json(listaProdutos)
         } catch (error) {
             next(error);
@@ -51,6 +48,14 @@ class PedidoController {
 
             const busca = {}
 
+            const clienteId = req.usuario.clienteId;
+
+            if (!clienteId) {
+                res.status(400).json({ message: 'Cliente ausente ou inválido!' });
+            }
+
+            busca.clienteId = clienteId;
+
             if (nomeCliente) busca.nomeCliente = { $regex: nomeCliente, $options: "i" }
             if (status) busca.status = status
 
@@ -60,6 +65,8 @@ class PedidoController {
             if (minValorTotal) busca.valorTotal.$gte = minValorTotal
             //LTE = Less Than or Equal = Menor ou Igual 
             if (maxValorTotal) busca.valorTotal.$lte = maxValorTotal
+
+
 
             // const pedidoEncontrado = await pedido.find(busca)
 
@@ -84,11 +91,18 @@ class PedidoController {
     }
 
     static async getPedidoId(req, res, next) {
-
         try {
             const id = req.params.id
-            const pedidoEncontrado = await pedido.findById(id)
-            res.status(200).json(pedidoEncontrado)
+            const pedidoEncontrado = await pedido.findOne({
+                _id: id,
+                clienteId: req.usuario.clienteId
+            })
+
+            if (pedidoEncontrado !== null) {
+                res.status(200).json(pedidoEncontrado)
+            } else {
+                next(new NaoEncontrado(`Id do pedido não localizado!`))
+            }
         } catch (error) {
             next(error);
         }
@@ -103,45 +117,38 @@ class PedidoController {
 
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
-                let valorAdicionais = 0
+                let valorAdicionais = 0;
 
                 if (item.adicionais.length > 0) {
                     item.adicionais.map((adicional) => {
-                        adicional.precoTotal = adicional.preco * adicional.quantidade
-                        valorAdicionais += adicional.precoTotal
-                        item.totalItem = (item.preco + valorAdicionais)
-                        return adicional
-                    })
+                        adicional.precoTotal = adicional.preco * adicional.quantidade;
+                        valorAdicionais += adicional.precoTotal;
+                        item.totalItem = (item.preco + valorAdicionais);
+                        return adicional;
+                    });
                 } else {
-                    item.totalItem = item.preco
+                    item.totalItem = item.preco;
                 }
-
 
                 item.precoTotal = item.totalItem * item.quantidade;
                 valorTotal += item.precoTotal;
-                return item; // Retornar o item processado
+                return item; // Retorna o item processado
             });
 
-            // Criar o pedido
+            // Criar o pedido com o clienteId convertido
             const pedidoCompleto = {
                 nomeCliente,
                 valorTotal,
                 tipoPedido,
                 formaPagamento,
-                itens: itensProcessados
+                itens: itensProcessados,
+                clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
             };
 
-            console.log('Novo pedido')
-            console.log(pedidoCompleto)
+            console.log('Novo pedido:', pedidoCompleto);
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
-
-            // Chamar a função para imprimir o pedido
-            await printText(pedidoCompleto);
-            // Enviar o pedido para a impressora
-            //await enviarParaImpressora(pedidoCompleto);
-
 
             if (!pedidoCriado) {
                 return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
@@ -149,15 +156,48 @@ class PedidoController {
 
             res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
         } catch (error) {
+            console.error("Erro ao criar pedido:", error);
             next(error);
         }
     }
+
 
     static async putPedido(req, res, next) {
 
         try {
             const id = req.params.id
-            await pedido.findByIdAndUpdate(id, req.body)
+            const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body)
+
+            if (pedidoEncontrado !== null) {
+                res.status(200).json({ message: "Pedido atualizado!" })
+            } else {
+                next(new NaoEncontrado('Id do pedido não localizado'))
+            }
+        } catch (error) {
+            next(error);
+        }
+
+    }
+
+    static async putPedidoItem(req, res, next) {
+
+        try {
+            const { pedidoId, itemId } = req.params;
+            const { status } = req.body;
+
+            console.log("Atualizar item", pedidoId, itemId, status)
+
+            const order = await pedido.findById(pedidoId);
+            console.log("Pedido encontrado", order)
+            if (!order) return res.status(404).json({ message: "Pedido não encontrado" });
+
+            const item = order.itens.find(i => i.idItem.toString() === itemId);
+            console.log("Item encontrado", item)
+            if (!item) return res.status(404).json({ message: "Item não encontrado" });
+
+            item.status = status; // Atualiza o status do item
+            await order.save(); // Salva as alterações
+
             res.status(200).json({ message: "Pedido atualizado!" })
         } catch (error) {
             next(error);
@@ -169,8 +209,16 @@ class PedidoController {
 
         try {
             const id = req.params.id
-            await pedido.findByIdAndDelete(id)
-            res.status(200).json({ message: "Pedido excluído!" })
+            const pedidoApagado = await pedido.findOneAndDelete({
+                _id: id,
+                clienteId: req.usuario.clienteId
+            })
+
+            if (pedidoApagado !== null) {
+                res.status(200).json({ message: "Pedido excluído!" })
+            } else {
+                next(new NaoEncontrado('Id do pedido não localizado'))
+            }
         } catch (error) {
             // res.status(500).json({ message: `${error.message} - Falha na exclusão do pedido!` });
             next(error);

@@ -2,6 +2,7 @@ import { usuario } from "../models/index.js"
 import NaoEncontrado from "../erros/NaoEncontrado.js";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import cliente from "../models/Cliente.js";
 
 // Chave secreta para assinar o token (guarde isso em variáveis de ambiente em produção)
 const JWT_SECRET = process.env.JWT_SECRET
@@ -10,7 +11,7 @@ class UsuarioController {
 
   static async postUsuario(req, res, next) {
 
-    const { nome, email, senha, permissao } = req.body;
+    const { nome, email, senha, permissao, clienteId } = req.body;
 
     try {
       const hashedSenha = await bcrypt.hash(senha, 10);
@@ -20,6 +21,7 @@ class UsuarioController {
         email,
         senha: hashedSenha,
         permissao,
+        clienteId,
       });
 
       await user.save();
@@ -52,13 +54,26 @@ class UsuarioController {
       const auth = await bcrypt.compare(senha, usuarioEncontrado.senha)
 
       if (auth) {
+
+        // Agora, busque o nome do cliente usando o clienteId do usuário
+        const clienteEncontrado = await cliente.findById(usuarioEncontrado.clienteId);
+
+        if (!clienteEncontrado) {
+            return res.status(404).json({ message: 'Cliente não encontrado!' });
+        }
+
+        // Adicione o nome do cliente ao objeto usuario
+        const clienteNome = clienteEncontrado.nome;
+
         // Gerar token JWT
         const token = jwt.sign(
           {
             id: usuarioEncontrado._id,
             nome: usuarioEncontrado.nome,
             email: usuarioEncontrado.email,
-            permissao: usuarioEncontrado.permissao 
+            permissao: usuarioEncontrado.permissao,
+            clienteId: usuarioEncontrado.clienteId,
+            clienteNome: clienteNome,
           },
           JWT_SECRET,
           { expiresIn: '8h' } // Token expira em 8 hora
@@ -77,11 +92,24 @@ class UsuarioController {
   static async getUsuarios(req, res, next) {
 
     try {
-      const listarUsuarios = await usuario.find({})
+      const listarUsuarios = await usuario.find({ clienteId: req.usuario.clienteId })
       res.status(200).json(listarUsuarios);
     } catch (error) {
       next(error);
     }
+  }
+
+  static async putUsuario(req, res, next) {
+
+    try {
+      const id = req.params.id
+      
+      await usuario.findOneAndUpdate({_id: id, clienteId: req.usuario.clienteId}, req.body)
+      res.status(200).json({ message: "Usuário atualizado com sucesso!" })
+    } catch (error) {
+      next(error);
+    }
+
   }
 
 }

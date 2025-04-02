@@ -7,7 +7,7 @@ import { adicionalSchema } from "./Produto.js";
 
 const adicionalPedidoSchema = new mongoose.Schema({
     nome: { type: String, required: true },
-    descricao: { type: String},
+    descricao: { type: String },
     preco: { type: Number, required: true },
     quantidade: { type: Number, required: true }, // Quantidade do adicional no pedido
     precoTotal: { type: Number, required: true }
@@ -15,15 +15,21 @@ const adicionalPedidoSchema = new mongoose.Schema({
 
 const itemPedidoSchema = new mongoose.Schema({
     _id: { type: mongoose.Schema.Types.ObjectId, ref: 'produtos', required: true }, // Referência ao produto
+    idItem: { type: mongoose.Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() }, // Gera um ID único para cada item
     nome: { type: String, required: true },
     descricao: { type: String },
-    obs: {type: String},
+    obs: { type: String },
     preco: { type: Number, required: true },
     categoria: { type: categoriaSchema, required: true }, // Usar schema de categoria
     adicionais: [adicionalPedidoSchema], // Array de adicionais
     quantidade: { type: Number, required: true }, // Quantidade do item no pedido
     totalItem: { type: Number, required: true },
-    precoTotal: { type: Number, required: true } 
+    precoTotal: { type: Number, required: true },
+    status: {
+        type: String,
+        enum: ['em preparo', 'pronto', 'cancelado'],
+        default: 'em preparo'
+    }
 });
 
 const pedidoSchema = new mongoose.Schema({
@@ -33,7 +39,7 @@ const pedidoSchema = new mongoose.Schema({
     horario: { type: Date, default: Date.now },
     status: {
         type: String,
-        enum: ['em preparo', 'pronto', 'concluído'],
+        enum: ['em preparo', 'pronto', 'concluído', 'cancelado'],
         default: 'em preparo'
     },
     tipoPedido: {
@@ -45,10 +51,11 @@ const pedidoSchema = new mongoose.Schema({
         type: String,
         enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto']
     },
-    itens: [itemPedidoSchema]
+    itens: [itemPedidoSchema],
+    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true }, 
 }, { versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
-pedidoSchema.virtual('quantidadeItens').get(function() {
+pedidoSchema.virtual('quantidadeItens').get(function () {
     return this.itens.reduce((total, item) => total + item.quantidade, 0);
 });
 

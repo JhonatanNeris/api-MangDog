@@ -5,6 +5,7 @@ import pedido from './Pedido.js'
 import { categoria } from './Categoria.js'
 import { produto } from './Produto.js'
 import usuario from './Usuario.js'
+import cliente from './Cliente.js'
 
 
-export { pedido, categoria, produto, usuario }
+export { pedido, categoria, produto, usuario, cliente }

@@ -6,7 +6,7 @@ class CategoriaController {
     static async getCategorias(req, res, next) {
 
         try {
-            const listaCategorias = await categoria.find({})
+            const listaCategorias = await categoria.find({ clienteId: req.usuario.clienteId })
             res.status(200).json(listaCategorias);
         } catch (error) {
             next(error);
@@ -18,7 +18,10 @@ class CategoriaController {
 
         try {
             const id = req.params.id
-            const categoriaEncontrada = await categoria.findById(id)
+            const categoriaEncontrada = await categoria.findOne({
+                _id: id,
+                clienteId: req.usuario.clienteId
+            })
 
             if (categoriaEncontrada !== null) {
                 res.status(200).send(categoriaEncontrada);
@@ -33,16 +36,21 @@ class CategoriaController {
     }
 
     static async getCategoriaFiltro(req, res, next) {
-        
+
         try {
             const nome = req.query.nome
 
+            console.log("Nome recebido na query:", nome);
+
             const categoriaEncontrada = await categoria.find({
-                nome: nome
+                nome: nome,
+                clienteId: req.usuario.clienteId
             })
 
+            console.log(categoriaEncontrada)
+
             if (categoriaEncontrada.length > 0) {
-                res.status(200).send({message: "Categoria encontrada!", categoriaEncontrada});
+                res.status(200).send({ message: "Categoria encontrada!", categoriaEncontrada });
             } else {
                 next(new NaoEncontrado(`Id da Categoria não localizado!`))
             }
@@ -56,7 +64,10 @@ class CategoriaController {
     static async postCategorias(req, res, next) {
 
         try {
-            const novaCategoria = await categoria.create(req.body)
+            const novaCategoria = await categoria.create({
+                ...req.body,
+                clienteId: req.usuario.clienteId
+            })
             res.status(201).json({ message: 'Cadastrado com sucesso!', categoria: novaCategoria })
         } catch (error) {
             next(error);
@@ -67,7 +78,7 @@ class CategoriaController {
 
         try {
             const id = req.params.id
-            const categoriaAtualizada = await categoria.findByIdAndUpdate(id, req.body)
+            const categoriaAtualizada = await categoria.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body)
 
             if (categoriaAtualizada !== null) {
                 res.status(200).json({ message: "Categoria atualizada!" })
@@ -85,14 +96,17 @@ class CategoriaController {
 
         try {
             const id = req.params.id
-            const categoriaApagada = await categoria.findByIdAndDelete(id)
+            const categoriaApagada = await categoria.findOneAndDelete({
+                _id: id,
+                clienteId: req.usuario.clienteId
+            })
 
-            if(categoriaApagada !== null){
+            if (categoriaApagada !== null) {
                 res.status(200).json({ message: "Categoria excluída!" })
-            }else {
+            } else {
                 next(new NaoEncontrado('Id da categoria não localizado'))
             }
-            
+
         } catch (error) {
             next(error);
         }

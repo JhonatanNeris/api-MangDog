@@ -6,6 +6,7 @@ class desempenhoController {
     static async getDesempenho(req, res, next) {
 
         try {
+
             const { dia, mes, ano } = req.query;
             const data = new Date();
 
@@ -17,8 +18,16 @@ class desempenhoController {
             const fimDia = new Date(inicioDia);
             fimDia.setDate(fimDia.getDate() + 1); // 4h59 do dia seguinte
 
-            const condicoes = {};
-
+            let clienteId = req.usuario.clienteId;
+        
+            // 🔹 Converta para ObjectId se necessário
+            if (mongoose.isValidObjectId(clienteId)) {
+                clienteId = new mongoose.Types.ObjectId(clienteId);
+            }
+        
+            console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
+        
+            const condicoes = { clienteId: clienteId };
             if (dia) {
                 condicoes.horario = {
                     $gte: new Date(anoAtual, mesAtual, diaAtual, 5, 0, 0), // Início do dia
@@ -67,20 +76,38 @@ class desempenhoController {
         try {
             const { dia, mes, ano } = req.query;
             const data = new Date();
-
-            const anoAtual = ano ? parseInt(ano) : data.getFullYear();
-            const mesAtual = mes ? parseInt(mes) - 1 : data.getMonth(); // mês é zero-indexed
-            const diaAtual = dia ? parseInt(dia) : data.getDate();
-
-            const condicoes = {};
-
-            condicoes.horario = {
-                $gte: new Date(anoAtual, mesAtual, diaAtual, 5, 0, 0),
-                $lt: new Date(anoAtual, mesAtual, diaAtual + 1, 4, 59, 59),
-            };
-
-            console.log("Condições de Filtro:", condicoes); // Adicionando log
-
+        
+            let anoAtual = ano ? parseInt(ano) : data.getFullYear();
+            let mesAtual = mes ? parseInt(mes) - 1 : data.getMonth(); // mês é zero-indexed
+            let diaAtual = dia ? parseInt(dia) : data.getDate();
+        
+            let clienteId = req.usuario.clienteId;
+        
+            // 🔹 Converta para ObjectId se necessário
+            if (mongoose.isValidObjectId(clienteId)) {
+                clienteId = new mongoose.Types.ObjectId(clienteId);
+            }
+        
+            console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
+        
+            const condicoes = { clienteId: clienteId };
+        
+            const horaAtual = data.getUTCHours();
+            if (!dia && horaAtual < 8) {
+                // Se for antes das 05:00 BRT (08:00 UTC), buscar o desempenho do dia anterior
+                const ontem = new Date(anoAtual, mesAtual, diaAtual - 1);
+                anoAtual = ontem.getFullYear();
+                mesAtual = ontem.getMonth();
+                diaAtual = ontem.getDate();
+            }
+        
+            const inicioUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual, 8, 0, 0)); // 05:00 BRT = 08:00 UTC
+            const fimUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual + 1, 7, 59, 59)); // 04:59 BRT = 07:59 UTC
+        
+            condicoes.horario = { $gte: inicioUTC, $lt: fimUTC };
+        
+            console.log("Condições de Filtro DIÁRIO:", JSON.stringify(condicoes, null, 2)); // ✅ LOG IMPORTANTE
+        
             const vendas = await pedido.aggregate([
                 { $match: condicoes },
                 {
@@ -91,9 +118,11 @@ class desempenhoController {
                     },
                 },
             ]);
-
+        
+            console.log("Resultado da consulta:", vendas); // ✅ LOG IMPORTANTE
+        
             const resultado = vendas[0] || { totalVendas: 0, quantidadePedidos: 0 };
-
+        
             res.status(200).json({
                 totalVendas: resultado.totalVendas,
                 quantidadePedidos: resultado.quantidadePedidos,
@@ -121,7 +150,18 @@ class desempenhoController {
             fim.setHours(4, 59, 59, 999);
             fim.setDate(fim.getDate() + 1);
 
-            const condicoes = { horario: { $gte: inicio, $lt: fim } };
+            let clienteId = req.usuario.clienteId;
+        
+            // 🔹 Converta para ObjectId se necessário
+            if (mongoose.isValidObjectId(clienteId)) {
+                clienteId = new mongoose.Types.ObjectId(clienteId);
+            }
+        
+            console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
+        
+            const condicoes = { clienteId: clienteId, horario: { $gte: inicio, $lt: fim } };
+
+            console.log("Condições de filtro po período: ", condicoes)            
 
             const totaisPeriodo = await pedido.aggregate([
                 { $match: condicoes },

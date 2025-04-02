@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
+// import cliente from '../models/Cliente.js';
 
 const JWT_SECRET = process.env.JWT_SECRET
 
-function autenticarToken(req, res, next){
+async function autenticarToken(req, res, next){
 
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Extrai o token do header
@@ -14,7 +15,7 @@ function autenticarToken(req, res, next){
     try {
         // Verifica o token
         const usuario = jwt.verify(token, JWT_SECRET);
-        req.usuario = usuario;
+        req.usuario = usuario;        
         
         // Chama o próximo middleware ou rota
         next(); 

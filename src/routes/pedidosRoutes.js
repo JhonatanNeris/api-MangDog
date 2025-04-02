@@ -16,6 +16,7 @@ routes.get("/pedidos/busca", autenticarToken, PedidoController.getPedidosFiltro,
 routes.get("/pedidos/:id", autenticarToken, PedidoController.getPedidoId)
 routes.post("/pedidos/novo/", autenticarToken, PedidoController.postPedido)
 routes.put("/pedidos/:id", autenticarToken, PedidoController.putPedido)
+routes.put('/pedidos/:pedidoId/itens/:itemId', autenticarToken, PedidoController.putPedidoItem)
 routes.delete("/pedidos/:id", autenticarToken, PedidoController.deletePedido)
 
 export default routes
