@@ -111,9 +111,11 @@ class PedidoController {
 
     static async postPedido(req, res, next) {
         try {
-            const { nomeCliente, itens, tipoPedido, formaPagamento } = req.body;
+            const { nomeCliente, itens, tipoPedido, formaPagamento, desconto } = req.body;
 
             let valorTotal = 0;
+            let descontoAplicado = parseFloat(desconto) || 0; // Garante que é um número válido
+            let subtotal = 0
 
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
@@ -131,14 +133,21 @@ class PedidoController {
                 }
 
                 item.precoTotal = item.totalItem * item.quantidade;
-                valorTotal += item.precoTotal;
+                subtotal += item.precoTotal;
                 return item; // Retorna o item processado
             });
+
+            // Aplicar desconto e calcular valor total
+            valorTotal = Math.max(0, subtotal - descontoAplicado); // Evita valores negativos
+
+            console.log(subtotal, valorTotal)
 
             // Criar o pedido com o clienteId convertido
             const pedidoCompleto = {
                 nomeCliente,
+                subtotal,
                 valorTotal,
+                desconto: descontoAplicado,
                 tipoPedido,
                 formaPagamento,
                 itens: itensProcessados,

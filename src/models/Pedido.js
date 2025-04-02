@@ -35,7 +35,9 @@ const itemPedidoSchema = new mongoose.Schema({
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
     nomeCliente: { type: String, required: true },
-    valorTotal: { type: Number, required: true },
+    valorTotal: { type: Number, required: true, min: 0 },
+    subtotal: { type: Number, required: true, min: 0 },
+    desconto: { type: Number, default: 0, min: 0 },
     horario: { type: Date, default: Date.now },
     status: {
         type: String,
