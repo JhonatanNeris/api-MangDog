@@ -93,7 +93,7 @@ class GrupoComplementosController {
             if (grupoComplementosAtualizado !== null) {
                 res.status(200).json({ message: "Grupo de complementos atualizado!" })
             } else {
-                next(new NaoEncontrado('Id do grupo de complementos não localizado'))
+                next(new NaoEncontrado('Id do grupo de complementos não localizado.'))
             }
 
         } catch (error) {
