@@ -119,22 +119,23 @@ class PedidoController {
 
             // Processar os itens e calcular o valor total
             const itensProcessados = itens.map((item) => {
-                let valorAdicionais = 0;
+                let valorComplementos = 0;
 
-                if (item.adicionais.length > 0) {
-                    item.adicionais.map((adicional) => {
-                        adicional.precoTotal = adicional.preco * adicional.quantidade;
-                        valorAdicionais += adicional.precoTotal;
-                        item.totalItem = (item.preco + valorAdicionais);
-                        return adicional;
+                if (item.complementos && item.complementos.length > 0) {
+                    item.complementos = item.complementos.map((complemento) => {
+                        complemento.precoTotal = complemento.preco * complemento.quantidade;
+                        valorComplementos += complemento.precoTotal;
+                        return complemento;
                     });
+
+                    item.totalItem = (item.preco + valorComplementos);
                 } else {
                     item.totalItem = item.preco;
                 }
 
                 item.precoTotal = item.totalItem * item.quantidade;
                 subtotal += item.precoTotal;
-                return item; // Retorna o item processado
+                return item;
             });
 
             // Aplicar desconto e calcular valor total

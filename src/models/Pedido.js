@@ -3,13 +3,12 @@ import mongoose from "mongoose"
 //Import do schema  
 import { produto } from "./Produto.js";
 import { categoriaSchema } from "./Categoria.js";
-import { adicionalSchema } from "./Produto.js";
 
-const adicionalPedidoSchema = new mongoose.Schema({
+const complementoPedidoSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     descricao: { type: String },
     preco: { type: Number, required: true },
-    quantidade: { type: Number, required: true }, // Quantidade do adicional no pedido
+    quantidade: { type: Number, required: true },
     precoTotal: { type: Number, required: true }
 });
 
@@ -21,7 +20,7 @@ const itemPedidoSchema = new mongoose.Schema({
     obs: { type: String },
     preco: { type: Number, required: true },
     categoria: { type: categoriaSchema, required: true }, // Usar schema de categoria
-    adicionais: [adicionalPedidoSchema], // Array de adicionais
+    complementos: [complementoPedidoSchema],
     quantidade: { type: Number, required: true }, // Quantidade do item no pedido
     totalItem: { type: Number, required: true },
     precoTotal: { type: Number, required: true },
