@@ -29,6 +29,36 @@ class PedidoController {
 
     }
 
+    static async getPedidosDoDia(req, res, next) {
+        try {
+            const agora = new Date();
+
+            // Começo do dia: hoje às 05:00 da manhã
+            const inicioDoDia = new Date(agora);
+            inicioDoDia.setHours(5, 0, 0, 0);
+
+            // Se for antes das 5h, o dia "começou" ontem às 5h
+            if (agora < inicioDoDia) {
+                inicioDoDia.setDate(inicioDoDia.getDate() - 1);
+            }
+
+            // Fim do dia: próximo dia às 04:59:59.999
+            const fimDoDia = new Date(inicioDoDia);
+            fimDoDia.setDate(fimDoDia.getDate() + 1);
+            fimDoDia.setHours(4, 59, 59, 999);
+
+            const pedidosDoDia = await pedido.find({
+                clienteId: req.usuario.clienteId,
+                horario: { $gte: inicioDoDia, $lte: fimDoDia },
+            });
+
+            res.status(200).json(pedidosDoDia)
+        } catch (error) {
+            next(error);
+        }
+    }
+
+
     static async getPedidosPreparo(req, res, next) {
 
         try {
@@ -44,7 +74,7 @@ class PedidoController {
     static async getPedidosFiltro(req, res, next) {
 
         try {
-            const { nomeCliente, status, minValorTotal, maxValorTotal } = req.query
+            const { nomeCliente, status, minValorTotal, maxValorTotal, formaPagamento } = req.query
 
             const busca = {}
 
@@ -58,6 +88,7 @@ class PedidoController {
 
             if (nomeCliente) busca.nomeCliente = { $regex: nomeCliente, $options: "i" }
             if (status) busca.status = status
+            if (formaPagamento) busca.formaPagamento = formaPagamento
 
             if (minValorTotal || maxValorTotal) busca.valorTotal = {}
 
@@ -65,7 +96,6 @@ class PedidoController {
             if (minValorTotal) busca.valorTotal.$gte = minValorTotal
             //LTE = Less Than or Equal = Menor ou Igual 
             if (maxValorTotal) busca.valorTotal.$lte = maxValorTotal
-
 
 
             // const pedidoEncontrado = await pedido.find(busca)
@@ -97,6 +127,13 @@ class PedidoController {
                 _id: id,
                 clienteId: req.usuario.clienteId
             })
+            .populate({
+                path: 'itens.grupoComplementos',
+                populate: {
+                    path: 'complementos'
+                }
+            });
+
 
             if (pedidoEncontrado !== null) {
                 res.status(200).json(pedidoEncontrado)
@@ -111,7 +148,7 @@ class PedidoController {
 
     static async postPedido(req, res, next) {
         try {
-            const { nomeCliente, itens, tipoPedido, formaPagamento, desconto } = req.body;
+            const { nomeCliente, itens, tipoPedido, formaPagamento, desconto, pagamentos } = req.body;
 
             let valorTotal = 0;
             let descontoAplicado = parseFloat(desconto) || 0; // Garante que é um número válido
@@ -141,6 +178,11 @@ class PedidoController {
             // Aplicar desconto e calcular valor total
             valorTotal = Math.max(0, subtotal - descontoAplicado); // Evita valores negativos
 
+            // Soma de todos os pagamentos enviados
+            const valorPago = (pagamentos || []).reduce((acc, curr) => acc + parseFloat(curr.valor || 0), 0);
+
+            const valorFiado = valorTotal - valorPago;
+
             console.log(subtotal, valorTotal)
 
             // Criar o pedido com o clienteId convertido
@@ -151,11 +193,14 @@ class PedidoController {
                 desconto: descontoAplicado,
                 tipoPedido,
                 formaPagamento,
+                pagamentos,
+                valorPago,
+                valorFiado,
                 itens: itensProcessados,
                 clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
             };
 
-            console.log('Novo pedido:', pedidoCompleto);
+            console.log('Novo pedido:', pedidoCompleto.itens);
 
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
@@ -176,10 +221,10 @@ class PedidoController {
 
         try {
             const id = req.params.id
-            const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body)
+            const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body, { new: true })
 
             if (pedidoEncontrado !== null) {
-                res.status(200).json({ message: "Pedido atualizado!" })
+                res.status(200).json(pedidoEncontrado)
             } else {
                 next(new NaoEncontrado('Id do pedido não localizado'))
             }

@@ -19,14 +19,14 @@ class desempenhoController {
             fimDia.setDate(fimDia.getDate() + 1); // 4h59 do dia seguinte
 
             let clienteId = req.usuario.clienteId;
-        
+
             // 🔹 Converta para ObjectId se necessário
             if (mongoose.isValidObjectId(clienteId)) {
                 clienteId = new mongoose.Types.ObjectId(clienteId);
             }
-        
+
             console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
-        
+
             const condicoes = { clienteId: clienteId };
             if (dia) {
                 condicoes.horario = {
@@ -76,22 +76,22 @@ class desempenhoController {
         try {
             const { dia, mes, ano } = req.query;
             const data = new Date();
-        
+
             let anoAtual = ano ? parseInt(ano) : data.getFullYear();
             let mesAtual = mes ? parseInt(mes) - 1 : data.getMonth(); // mês é zero-indexed
             let diaAtual = dia ? parseInt(dia) : data.getDate();
-        
+
             let clienteId = req.usuario.clienteId;
-        
+
             // 🔹 Converta para ObjectId se necessário
             if (mongoose.isValidObjectId(clienteId)) {
                 clienteId = new mongoose.Types.ObjectId(clienteId);
             }
-        
+
             console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
-        
+
             const condicoes = { clienteId: clienteId };
-        
+
             const horaAtual = data.getUTCHours();
             if (!dia && horaAtual < 8) {
                 // Se for antes das 05:00 BRT (08:00 UTC), buscar o desempenho do dia anterior
@@ -100,14 +100,14 @@ class desempenhoController {
                 mesAtual = ontem.getMonth();
                 diaAtual = ontem.getDate();
             }
-        
+
             const inicioUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual, 8, 0, 0)); // 05:00 BRT = 08:00 UTC
             const fimUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual + 1, 7, 59, 59)); // 04:59 BRT = 07:59 UTC
-        
+
             condicoes.horario = { $gte: inicioUTC, $lt: fimUTC };
-        
+
             console.log("Condições de Filtro DIÁRIO:", JSON.stringify(condicoes, null, 2)); // ✅ LOG IMPORTANTE
-        
+
             const vendas = await pedido.aggregate([
                 { $match: condicoes },
                 {
@@ -118,11 +118,11 @@ class desempenhoController {
                     },
                 },
             ]);
-        
+
             console.log("Resultado da consulta:", vendas); // ✅ LOG IMPORTANTE
-        
+
             const resultado = vendas[0] || { totalVendas: 0, quantidadePedidos: 0 };
-        
+
             res.status(200).json({
                 totalVendas: resultado.totalVendas,
                 quantidadePedidos: resultado.quantidadePedidos,
@@ -151,17 +151,17 @@ class desempenhoController {
             fim.setDate(fim.getDate() + 1);
 
             let clienteId = req.usuario.clienteId;
-        
+
             // 🔹 Converta para ObjectId se necessário
             if (mongoose.isValidObjectId(clienteId)) {
                 clienteId = new mongoose.Types.ObjectId(clienteId);
             }
-        
+
             console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
-        
+
             const condicoes = { clienteId: clienteId, horario: { $gte: inicio, $lt: fim } };
 
-            console.log("Condições de filtro po período: ", condicoes)            
+            console.log("Condições de filtro po período: ", condicoes)
 
             const totaisPeriodo = await pedido.aggregate([
                 { $match: condicoes },
@@ -174,9 +174,9 @@ class desempenhoController {
                 }
             ]);
 
-            
+
             const resultado = totaisPeriodo[0] || { totalVendas: 0, quantidadePedidos: 0 };
-            
+
             const ticketMedio = resultado.quantidadePedidos > 0
                 ? resultado.totalVendas / resultado.quantidadePedidos
                 : 0;
@@ -187,8 +187,21 @@ class desempenhoController {
                 {
                     $group: {
                         _id: {
-                            dia: { $dateToString: { format: "%d-%m-%Y", date: "$horario" } },
-                            formaPagamento: "$formaPagamento"
+                            dia: {
+                                $dateToString: {
+                                    format: "%d-%m-%Y",
+                                    date: "$horario",
+                                    timezone: "America/Sao_Paulo"
+                                }
+                            },
+                            formaPagamento: "$formaPagamento",
+                            diaOriginal: {
+                                $dateTrunc: {
+                                    date: "$horario",
+                                    unit: "day",
+                                    timezone: "America/Sao_Paulo"
+                                }
+                            }
                         },
                         totalVendas: { $sum: "$valorTotal" },
                         quantidadePedidos: { $sum: 1 }
@@ -197,6 +210,7 @@ class desempenhoController {
                 {
                     $group: {
                         _id: "$_id.dia",
+                        diaOriginal: { $first: "$_id.diaOriginal" },
                         formasPagamento: {
                             $push: {
                                 formaPagamento: "$_id.formaPagamento",
@@ -209,7 +223,7 @@ class desempenhoController {
                     }
                 },
                 {
-                    $sort: { "_id": 1 }  // Ordena por data
+                    $sort: { "diaOriginal": 1 }  // Ordena por data
                 }
             ]);
 

@@ -5,7 +5,7 @@ const usuarioSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     senha: { type: String, required: true },
-    permissao: { type: String, enum: ['admin', 'colaborador'], default: 'colaborador' },
+    permissao: { type: String, enum: ['admin', 'colaborador', 'dono'], default: 'colaborador' },
     clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true }, // Referência ao cliente
 }, { versionKey: false });
 

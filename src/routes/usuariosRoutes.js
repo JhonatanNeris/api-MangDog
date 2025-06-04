@@ -13,8 +13,8 @@ routes.get("/usuarios/validar-token", autenticarToken, (req, res) => {
     return res.status(200).json({ user: req.usuario, clienteNome: req.usuario.clienteNome });
 })
 routes.post("/usuarios/login/", UsuarioController.loginUsuario)
-routes.post("/usuarios/register/", UsuarioController.postUsuario)
+routes.post("/usuarios/register/", autenticarToken, UsuarioController.postUsuario)
 routes.put("/usuarios/:id", autenticarToken, UsuarioController.putUsuario)
-// routes.delete("/usuarios/:id", UsuarioController.deletePedido)
+routes.delete("/usuarios/:id", autenticarToken, UsuarioController.deleteUsuario)
 
 export default routes

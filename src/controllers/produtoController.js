@@ -13,6 +13,17 @@ class ProdutoController {
 
     }
 
+    static async getProdutosComGruposComplementos(req, res, next) {
+
+        try {
+            const listaProdutos = await produto.find({ clienteId: req.usuario.clienteId }).populate({path: 'grupoComplementos', populate: {path: 'complementos'}})
+            res.status(200).json(listaProdutos)
+        } catch (error) {
+            next(error);
+        }
+
+    }
+
     static async getProdutoId(req, res, next) {
 
         try {

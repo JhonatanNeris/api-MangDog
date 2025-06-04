@@ -25,6 +25,10 @@
     "mongoose": "^8.6.0",
     "node-thermal-printer": "^4.4.3",
     "nodemon": "^3.1.4",
+    "stripe": "^18.1.1",
     "usb": "^2.14.0"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }

@@ -11,7 +11,7 @@ class UsuarioController {
 
   static async postUsuario(req, res, next) {
 
-    const { nome, email, senha, permissao, clienteId } = req.body;
+    const { nome, email, senha, permissao } = req.body;
 
     try {
       const hashedSenha = await bcrypt.hash(senha, 10);
@@ -21,13 +21,18 @@ class UsuarioController {
         email,
         senha: hashedSenha,
         permissao,
-        clienteId,
+        clienteId: req.usuario.clienteId
       });
 
       await user.save();
 
       res.status(201).json({ message: 'Usuário registrado com sucesso', user });
     } catch (error) {
+
+      // Erro de e-mail duplicado
+      if (error.code === 11000 && error.keyPattern?.email) {
+        return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+      }
       next(error);
     }
   }
@@ -59,7 +64,7 @@ class UsuarioController {
         const clienteEncontrado = await cliente.findById(usuarioEncontrado.clienteId);
 
         if (!clienteEncontrado) {
-            return res.status(404).json({ message: 'Cliente não encontrado!' });
+          return res.status(404).json({ message: 'Cliente não encontrado!' });
         }
 
         // Adicione o nome do cliente ao objeto usuario
@@ -103,9 +108,30 @@ class UsuarioController {
 
     try {
       const id = req.params.id
-      
-      await usuario.findOneAndUpdate({_id: id, clienteId: req.usuario.clienteId}, req.body)
+
+      await usuario.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body)
       res.status(200).json({ message: "Usuário atualizado com sucesso!" })
+    } catch (error) {
+      next(error);
+    }
+
+  }
+
+  static async deleteUsuario(req, res, next) {
+
+    try {
+      const id = req.params.id
+      const usuarioDeletado = await usuario.findOneAndDelete({
+        _id: id,
+        clienteId: req.usuario.clienteId
+      })
+
+      if (usuarioDeletado !== null) {
+        res.status(200).json({ message: "Usuário excluído!" })
+      } else {
+        next(new NaoEncontrado('Id do usuário não localizado'))
+      }
+
     } catch (error) {
       next(error);
     }

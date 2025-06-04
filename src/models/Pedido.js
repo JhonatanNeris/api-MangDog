@@ -21,6 +21,7 @@ const itemPedidoSchema = new mongoose.Schema({
     preco: { type: Number, required: true },
     categoria: { type: categoriaSchema, required: true }, // Usar schema de categoria
     complementos: [complementoPedidoSchema],
+    grupoComplementos: [{ type: mongoose.Schema.Types.ObjectId, ref: "grupoComplementos" }],
     quantidade: { type: Number, required: true }, // Quantidade do item no pedido
     totalItem: { type: Number, required: true },
     precoTotal: { type: Number, required: true },
@@ -29,6 +30,15 @@ const itemPedidoSchema = new mongoose.Schema({
         enum: ['em preparo', 'pronto', 'cancelado'],
         default: 'em preparo'
     }
+});
+
+const pagementoSchema = new mongoose.Schema({
+    formaPagamento: {
+        type: String,
+        enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto']
+    },
+    valor: { type: Number, required: true }
+
 });
 
 const pedidoSchema = new mongoose.Schema({
@@ -50,10 +60,14 @@ const pedidoSchema = new mongoose.Schema({
     },
     formaPagamento: {
         type: String,
-        enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto']
+        enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto'],
+        required: false
     },
+    pagamentos: [pagementoSchema],
+    valorPago: { type: Number, default: 0 },
+    valorFiado: { type: Number, default: 0 },
     itens: [itemPedidoSchema],
-    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true }, 
+    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true },
 }, { versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 pedidoSchema.virtual('quantidadeItens').get(function () {
