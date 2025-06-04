@@ -5,9 +5,11 @@ import pedido from "./src/models/Pedido.js"; // Caminho correto do modelo de pro
 
 const clienteId = "67db8d48e70b5cdc794de4b6"; // ID do cliente que você deseja atribuir
 
+const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING
+
 async function atualizarItens() {
     try {
-        await mongoose.connect("mongodb+srv://admin:admin123@cluster0.19oy4.mongodb.net/mangDog?retryWrites=true&w=majority&appName=Cluster0");
+        await mongoose.connect(DB_CONNECTION_STRING);
 
         const pedidosSemCliente = await pedido.find({ clienteId: { $exists: false } }); // Busca pedidos sem clienteId
 
