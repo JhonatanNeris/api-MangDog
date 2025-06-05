@@ -5,7 +5,6 @@ import cors from 'cors';
 import manipuladorDeErros from './middlewares/manipuladorDeErros.js'
 import manipulador404 from './middlewares/manipulador404.js';
 
-
 const conexao = await conectaNaDatabase()
 
 conexao.on('error', (error) => {
@@ -19,7 +18,7 @@ conexao.once('open', () => {
 const app = express()
 
 // O middleware CORS aqui permite todas as origens
-app.use(cors()); 
+app.use(cors());
 
 routes(app)
 
@@ -29,4 +28,5 @@ app.use(manipulador404)
 //middleware de erro
 app.use(manipuladorDeErros)
 
+// no final do seu app.js, exporte assim:
 export default app;

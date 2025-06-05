@@ -12,6 +12,8 @@ import mongoose from "mongoose";
 import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
 // Função para enviar o pedido para o servidor de impressão local
 
+import { getIO } from '../../socket.js';
+
 class PedidoController {
 
     static async getPedidos(req, res, next) {
@@ -127,12 +129,12 @@ class PedidoController {
                 _id: id,
                 clienteId: req.usuario.clienteId
             })
-            .populate({
-                path: 'itens.grupoComplementos',
-                populate: {
-                    path: 'complementos'
-                }
-            });
+                .populate({
+                    path: 'itens.grupoComplementos',
+                    populate: {
+                        path: 'complementos'
+                    }
+                });
 
 
             if (pedidoEncontrado !== null) {
@@ -205,6 +207,9 @@ class PedidoController {
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
+            const io = getIO();
+            io.to(req.usuario.clienteId).emit("pedido:novo", pedidoCriado);
+
             if (!pedidoCriado) {
                 return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
             }
@@ -222,6 +227,9 @@ class PedidoController {
         try {
             const id = req.params.id
             const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body, { new: true })
+
+            const io = getIO();
+            io.to(req.usuario.clienteId).emit("pedido:atualizado", pedidoEncontrado);
 
             if (pedidoEncontrado !== null) {
                 res.status(200).json(pedidoEncontrado)
@@ -268,6 +276,9 @@ class PedidoController {
                 _id: id,
                 clienteId: req.usuario.clienteId
             })
+
+            const io = getIO();
+            io.to(req.usuario.clienteId).emit("pedido:removido", pedidoApagado);
 
             if (pedidoApagado !== null) {
                 res.status(200).json({ message: "Pedido excluído!" })
