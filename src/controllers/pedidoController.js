@@ -150,7 +150,7 @@ class PedidoController {
 
     static async postPedido(req, res, next) {
         try {
-            const { nomeCliente, itens, tipoPedido, formaPagamento, desconto, pagamentos } = req.body;
+            const { nomeCliente, tipoPedido, formaPagamento, desconto, pagamentos, itens } = req.body;
 
             let valorTotal = 0;
             let descontoAplicado = parseFloat(desconto) || 0; // Garante que é um número válido
