@@ -121,7 +121,7 @@ class stripeController {
 
     static async getStatusAssinatura(req, res, next) {
         try {
-            const clienteId = req.usuario?.clienteId; 
+            const clienteId = req.usuario?.clienteId;
 
             if (!clienteId) {
                 return res.status(400).json({ erro: 'Cliente não identificado.' });
@@ -134,6 +134,31 @@ class stripeController {
             }
 
             res.json({ ativa: clienteEncontrado.assinaturaAtiva === true });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async criarPortalSession(req, res, next) {
+        try {
+            const clienteId = req.usuario?.clienteId;
+
+            if (!clienteId) {
+                return res.status(400).json({ erro: 'Cliente não autenticado.' });
+            }
+
+            const clienteEncontrado = await cliente.findById(clienteId);
+
+            if (!clienteEncontrado || !clienteEncontrado.stripeCustomerId) {
+                return res.status(404).json({ erro: 'Cliente não possui stripeCustomerId.' });
+            }
+
+            const session = await stripe.billingPortal.sessions.create({
+                customer: clienteEncontrado.stripeCustomerId,
+                return_url: process.env.RETURN_URL_PORTAL || 'https://sistema-bruto.vercel.app/',
+            });
+
+            res.json({ url: session.url });
         } catch (error) {
             next(error);
         }

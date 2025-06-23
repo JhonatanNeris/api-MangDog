@@ -12,7 +12,9 @@ const routes = express.Router()
 
 routes.post("/create-checkout-session", stripeController.criarSessaoCheckout)
 routes.post("/stripe/criar-conta", autenticarToken, stripeController.criarContaStripeCheckout)
-routes.get("/stripe/status", autenticarToken, stripeController.statusContaStripe)
+routes.get("/stripe/status-conta", autenticarToken, stripeController.statusContaStripe)
+routes.get("/stripe/status-assinatura", autenticarToken, stripeController.getStatusAssinatura)
+routes.get("/stripe/create-portal-session", autenticarToken, stripeController.criarPortalSession)
 routes.post("/webhook", stripeController.webhook)
 
 export default routes   
