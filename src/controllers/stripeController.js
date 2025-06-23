@@ -119,6 +119,26 @@ class stripeController {
         }
     }
 
+    static async getStatusAssinatura(req, res, next) {
+        try {
+            const clienteId = req.usuario?.clienteId; 
+
+            if (!clienteId) {
+                return res.status(400).json({ erro: 'Cliente não identificado.' });
+            }
+
+            const clienteEncontrado = await cliente.findById(clienteId);
+
+            if (!clienteEncontrado) {
+                return res.status(404).json({ erro: 'Cliente não encontrado.' });
+            }
+
+            res.json({ ativa: clienteEncontrado.assinaturaAtiva === true });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
     static async webhook(req, res, next) {
         const sig = req.headers['stripe-signature'];

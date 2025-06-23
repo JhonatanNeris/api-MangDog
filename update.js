@@ -6,41 +6,28 @@ import cliente from "./src/models/Cliente.js";
 
 const clienteId = "67db8d48e70b5cdc794de4b6"; // ID do cliente que você deseja atribuir
 
-const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING 
-
-function gerarSlug(nome) {
-    return nome
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/[^\w\-]+/g, "")
-        .replace(/\-\-+/g, "-")
-        .replace(/^-+|-+$/g, "");
-}
+// Troque pela string real 
+const DB_CONNECTION_STRING = ""
 
 async function atualizarItens() {
-    try {
-        await mongoose.connect(DB_CONNECTION_STRING);
-
-        const clientesSemSlug = await cliente.find({ slug: { $exists: false } }); // Busca clientes sem slug
-
-        let count = 0;
-
-        for (const cliente of clientesSemSlug) {
-
-            let slug = gerarSlug(cliente.nome);  
-            cliente.slug = slug;
-            await cliente.save();
-            count++;
-        }
-
-        console.log(`Atualizados ${count} clientes com slug.`);
-        mongoose.connection.close();
-    } catch (error) {
-        console.error("Erro ao atualizar pedidos:", error);
-        mongoose.connection.close();
+  try {
+    if (!DB_CONNECTION_STRING) {
+      throw new Error("DB_CONNECTION_STRING não definida.");
     }
+
+    await mongoose.connect(DB_CONNECTION_STRING);
+
+    const resultado = await cliente.findByIdAndUpdate(clienteId, {
+      assinaturaAtiva: true,
+      stripeCustomerId: "cus_SYIlM7qXYUYHfG",
+    });
+
+    console.log(`Cliente atualizado:`, resultado);
+    mongoose.connection.close();
+  } catch (error) {
+    console.error("Erro ao atualizar:", error);
+    mongoose.connection.close();
+  }
 }
 
 atualizarItens();

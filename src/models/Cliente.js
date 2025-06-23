@@ -17,7 +17,7 @@ const ClienteSchema = new mongoose.Schema({
     },
     plano: { type: String, enum: ["basico", "bruto"] },
     slug: { type: String, unique: true },
-    ativo: { type: Boolean, default: false },
+    assinaturaAtiva: { type: Boolean, default: false },
     criadoEm: { type: Date, default: Date.now },
 }, { versionKey: false });
 
