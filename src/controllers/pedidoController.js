@@ -76,7 +76,7 @@ class PedidoController {
     static async getPedidosFiltro(req, res, next) {
 
         try {
-            const { nomeCliente, status, minValorTotal, maxValorTotal, formaPagamento } = req.query
+            const { nomeCliente, status, minValorTotal, maxValorTotal, formaPagamento, apenasEmAberto } = req.query
 
             const busca = {}
 
@@ -91,6 +91,8 @@ class PedidoController {
             if (nomeCliente) busca.nomeCliente = { $regex: nomeCliente, $options: "i" }
             if (status) busca.status = status
             if (formaPagamento) busca.formaPagamento = formaPagamento
+            if (apenasEmAberto === 'true') busca.valorFiado = { $gt: 0 }; // 👈 aqui o filtro por fiado
+
 
             if (minValorTotal || maxValorTotal) busca.valorTotal = {}
 

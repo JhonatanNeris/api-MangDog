@@ -79,6 +79,7 @@ class UsuarioController {
             permissao: usuarioEncontrado.permissao,
             clienteId: usuarioEncontrado.clienteId,
             clienteNome: clienteNome,
+            clienteEmail: clienteEncontrado.emailContato
           },
           JWT_SECRET,
           { expiresIn: '8h' } // Token expira em 8 hora

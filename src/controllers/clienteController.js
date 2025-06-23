@@ -5,6 +5,17 @@ import jwt from 'jsonwebtoken';
 // Chave secreta para assinar o token (guarde isso em variáveis de ambiente em produção)
 const JWT_SECRET = process.env.JWT_SECRET
 
+const gerarSlug = (texto) => {
+    return texto
+        .toLowerCase()
+        .normalize("NFD") // remove acentos
+        .replace(/[\u0300-\u036f]/g, "") // remove caracteres especiais dos acentos
+        .replace(/[^a-z0-9 ]/g, "") // remove caracteres especiais
+        .replace(/\s+/g, "-") // substitui espaços por hífens
+        .replace(/-+/g, "-") // remove múltiplos hífens
+        .replace(/^-|-$/g, ""); // remove hífens no início/fim
+};
+
 class ClienteController {
     static async postCliente(req, res, next) {
 
@@ -37,6 +48,16 @@ class ClienteController {
 
             const { nomeRestaurante, cnpj, telefone, plano, email, senha, nomeUsuario } = req.body;
 
+            let slug = gerarSlug(nomeRestaurante);
+            let slugExistente = await cliente.findOne({ slug });
+            let contador = 1;
+
+            while (slugExistente) {
+                slug = `${gerarSlug(nomeRestaurante)}-${contador}`;
+                slugExistente = await cliente.findOne({ slug });
+                contador++;
+            }
+
             // 1 - Cadastrar cliente
             const novoCliente = new cliente({
                 nome: nomeRestaurante,
@@ -44,6 +65,7 @@ class ClienteController {
                 emailContato: email,
                 telefoneContato: telefone,
                 plano,
+                slug,
                 ativo: false,
             })
 
@@ -92,6 +114,19 @@ class ClienteController {
             next(error);
         }
     }
+
+      static async putCliente(req, res, next) {
+    
+        try {
+          const id = req.params.id
+    
+          await cliente.findOneAndUpdate({ _id: id }, req.body)
+          res.status(200).json({ message: "Cliente atualizado com sucesso!" })
+        } catch (error) {
+          next(error);
+        }
+    
+      }
 
 }
 

@@ -16,11 +16,55 @@ class ProdutoController {
     static async getProdutosComGruposComplementos(req, res, next) {
 
         try {
-            const listaProdutos = await produto.find({ clienteId: req.usuario.clienteId }).populate({path: 'grupoComplementos', populate: {path: 'complementos'}})
+            const listaProdutos = await produto.find({ clienteId: req.usuario.clienteId }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
             res.status(200).json(listaProdutos)
         } catch (error) {
             next(error);
         }
+
+    }
+
+    static async getCardapio(req, res, next) {
+
+        try {
+            const slug = req.params.slug
+
+            // Buscar cliente pelo slug
+            const clienteEncontrado = await cliente.findOne({ slug });
+
+            if (!clienteEncontrado) {
+                throw new Error("Cliente não encontrado com esse slug.");
+            }
+
+            const clienteId = clienteEncontrado._id;
+
+            const listaCategorias = await categoria.find({ clienteId })
+
+            const listaProdutos = await produto.find({ clienteId }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
+
+            console.log(listaProdutos)
+
+            // Agrupar produtos por categoria
+            const cardapio = listaCategorias.map((cat) => {
+                const produtosDaCategoria = listaProdutos.filter(
+                    (produto) => produto.categoria._id?.toString() === cat._id.toString()
+                );
+
+                return {
+                    _id: cat._id,
+                    nome: cat.nome,
+                    produtos: produtosDaCategoria,
+                };
+            });
+
+
+            console.log(cardapio)
+            res.status(200).json(cardapio)
+        } catch (error) {
+            next(error);
+        }
+
+
 
     }
 
