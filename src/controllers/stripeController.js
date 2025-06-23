@@ -153,13 +153,17 @@ class stripeController {
                 return res.status(404).json({ erro: 'Cliente não possui stripeCustomerId.' });
             }
 
+            console.log(clienteEncontrado.stripeCustomerId)
+
             const session = await stripe.billingPortal.sessions.create({
                 customer: clienteEncontrado.stripeCustomerId,
-                return_url: process.env.RETURN_URL_PORTAL || 'https://sistema-bruto.vercel.app/',
+                // return_url: process.env.RETURN_URL_PORTAL || 'https://sistema-bruto.vercel.app/',
+                return_url: 'https://sistema-bruto.vercel.app/',
             });
 
             res.json({ url: session.url });
         } catch (error) {
+            console.log("passou pelo controler...")
             next(error);
         }
     }
