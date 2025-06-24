@@ -151,20 +151,24 @@ class stripeController {
 
             const paymentMethod = await stripe.paymentMethods.retrieve(
                 subscription.default_payment_method
-            );
-
+            );   
+            
+            const product = await stripe.products.retrieve(subscription.items.data[0].price.product);
+            
             const dadosAssinatura = {
                 status: subscription.status,
                 proximaCobranca: new Date(subscription.current_period_end * 1000),
                 valor: subscription.items.data[0].price.unit_amount / 100,
                 moeda: subscription.items.data[0].price.currency,
-                plano: subscription.items.data[0].price.nickname || 'Plano sem nome',
+                plano: product.name,
                 cartao: {
                     marca: paymentMethod.card.brand,
                     ultimos4: paymentMethod.card.last4,
                     vencimento: `${paymentMethod.card.exp_month}/${paymentMethod.card.exp_year}`,
                 },
             };
+
+            console.log(dadosAssinatura)
 
             res.json({
                 ativa: subscription.status === 'active',
