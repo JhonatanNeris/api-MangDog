@@ -138,7 +138,6 @@ class stripeController {
                 limit: 1,
             });
 
-            console.log(subscriptions)
 
             if (!subscriptions.data.length) {
                 return res.status(404).json({ erro: 'Nenhuma assinatura encontrada.' });
@@ -159,6 +158,7 @@ class stripeController {
                 proximaCobranca: new Date(subscription.current_period_end * 1000),
                 valor: subscription.items.data[0].price.unit_amount / 100,
                 moeda: subscription.items.data[0].price.currency,
+                plano: subscription.items.data[0].price.nickname || 'Plano sem nome',
                 cartao: {
                     marca: paymentMethod.card.brand,
                     ultimos4: paymentMethod.card.last4,
