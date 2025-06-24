@@ -128,16 +128,54 @@ class stripeController {
             }
 
             const clienteEncontrado = await cliente.findById(clienteId);
-
-            if (!clienteEncontrado) {
-                return res.status(404).json({ erro: 'Cliente não encontrado.' });
+            if (!clienteEncontrado || !clienteEncontrado.stripeCustomerId) {
+                return res.status(404).json({ erro: 'Cliente não encontrado ou sem stripeCustomerId.' });
             }
 
-            res.json({ ativa: clienteEncontrado.assinaturaAtiva === true });
+            const subscriptions = await stripe.subscriptions.list({
+                customer: clienteEncontrado.stripeCustomerId,
+                status: 'all',
+                limit: 1,
+            });
+
+            console.log(subscriptions)
+
+            if (!subscriptions.data.length) {
+                return res.status(404).json({ erro: 'Nenhuma assinatura encontrada.' });
+            }
+
+            const subscription = subscriptions.data[0];
+
+            if (!subscription.default_payment_method) {
+                return res.status(400).json({ erro: 'Assinatura sem método de pagamento.' });
+            }
+
+            const paymentMethod = await stripe.paymentMethods.retrieve(
+                subscription.default_payment_method
+            );
+
+            const dadosAssinatura = {
+                status: subscription.status,
+                proximaCobranca: new Date(subscription.current_period_end * 1000),
+                valor: subscription.items.data[0].price.unit_amount / 100,
+                moeda: subscription.items.data[0].price.currency,
+                cartao: {
+                    marca: paymentMethod.card.brand,
+                    ultimos4: paymentMethod.card.last4,
+                    vencimento: `${paymentMethod.card.exp_month}/${paymentMethod.card.exp_year}`,
+                },
+            };
+
+            res.json({
+                ativa: subscription.status === 'active',
+                dadosAssinatura,
+            });
         } catch (error) {
+            console.error('❌ Erro em getStatusAssinatura:', error);
             next(error);
         }
     }
+
 
     static async criarPortalSession(req, res, next) {
         try {
