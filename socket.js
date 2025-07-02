@@ -41,6 +41,14 @@ export const setupSocket = (server) => {
             console.log(`Socket ${socket.id} entrou na sala ${clienteId}`);
         });
 
+        // Encerrar conexão após 5 minutos
+        const MAX_LIFETIME_MS = 5 * 60 * 1000;
+        const timeout = setTimeout(() => {
+            console.log(`Socket ${socket.id} desconectado por inatividade.`);
+            socket.disconnect(true);
+        }, MAX_LIFETIME_MS);
+
+
         socket.on("disconnect", () => {
             console.log("Cliente desconectado:", socket.id);
         });

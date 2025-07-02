@@ -1,4 +1,4 @@
-import { pedido } from '../models/index.js';
+import { pedido, configuracoes } from '../models/index.js';
 import NaoEncontrado from "../erros/NaoEncontrado.js";
 import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
@@ -51,7 +51,7 @@ class PedidoController {
 
             const pedidosDoDia = await pedido.find({
                 clienteId: req.usuario.clienteId,
-                horario: { $gte: inicioDoDia, $lte: fimDoDia },
+                createdAt: { $gte: inicioDoDia, $lte: fimDoDia },
             });
 
             res.status(200).json(pedidosDoDia)
@@ -154,6 +154,25 @@ class PedidoController {
         try {
             const { nomeCliente, tipoPedido, formaPagamento, desconto, pagamentos, itens } = req.body;
 
+            const clienteId = req.usuario.clienteId;
+
+            if(!clienteId){
+                return res.status(500).json({ message: 'inválido' });
+            }
+
+            // Incrementa a sequência com segurança
+            const configAtualizada = await configuracoes.findOneAndUpdate(
+                { clienteId },
+                { $inc: { "pedidos.sequencia": 1 } },
+                { new: true }
+            );
+
+            if (!configAtualizada) {
+                return res.status(500).json({ erro: "Configuração não encontrada." });
+            }
+
+            const numeroPedido = configAtualizada.pedidos.sequencia;
+
             let valorTotal = 0;
             let descontoAplicado = parseFloat(desconto) || 0; // Garante que é um número válido
             let subtotal = 0
@@ -202,6 +221,7 @@ class PedidoController {
                 valorFiado,
                 itens: itensProcessados,
                 clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
+                numeroPedido
             };
 
             console.log('Novo pedido:', pedidoCompleto.itens);
@@ -223,7 +243,7 @@ class PedidoController {
         }
     }
 
-
+   
     static async putPedido(req, res, next) {
 
         try {

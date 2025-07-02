@@ -42,6 +42,22 @@ class ClienteController {
         }
     }
 
+    static async getClienteLogado(req, res, next) {
+        try {
+            const clienteId = req.usuario.clienteId;
+            const clienteEncontrado = await cliente.findById(clienteId);
+
+            if (!clienteEncontrado) {
+                return res.status(404).json({ erro: "Cliente não encontrado." });
+            }
+
+            res.status(200).json(clienteEncontrado);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+
     static async postClienteEUsuario(req, res, next) {
 
         try {
@@ -115,18 +131,18 @@ class ClienteController {
         }
     }
 
-      static async putCliente(req, res, next) {
-    
+    static async putCliente(req, res, next) {
+
         try {
-          const id = req.params.id
-    
-          await cliente.findOneAndUpdate({ _id: id }, req.body)
-          res.status(200).json({ message: "Cliente atualizado com sucesso!" })
+            const id = req.params.id
+
+            await cliente.findOneAndUpdate({ _id: id }, req.body)
+            res.status(200).json({ message: "Cliente atualizado com sucesso!" })
         } catch (error) {
-          next(error);
+            next(error);
         }
-    
-      }
+
+    }
 
 }
 

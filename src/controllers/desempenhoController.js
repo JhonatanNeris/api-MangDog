@@ -29,17 +29,17 @@ class desempenhoController {
 
             const condicoes = { clienteId: clienteId };
             if (dia) {
-                condicoes.horario = {
+                condicoes.createdAt = {
                     $gte: new Date(anoAtual, mesAtual, diaAtual, 5, 0, 0), // Início do dia
                     $lt: new Date(anoAtual, mesAtual, diaAtual + 1, 4, 59, 0), // Início do dia seguinte
                 };
             } else if (mes) {
-                condicoes.horario = {
+                condicoes.createdAt = {
                     $gte: new Date(anoAtual, mesAtual, 1, 0, 0, 0), // Início do mês
                     $lt: new Date(anoAtual, mesAtual + 1, 1, 0, 0, 0), // Início do próximo mês
                 };
             } else {
-                condicoes.horario = {
+                condicoes.createdAt = {
                     $gte: new Date(anoAtual, mesAtual, 1, 0, 0, 0),
                     $lt: new Date(anoAtual, mesAtual + 1, 1, 0, 0, 0),
                 };
@@ -90,7 +90,7 @@ class desempenhoController {
 
             console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
 
-            const condicoes = { clienteId: clienteId };
+            const condicoes = { clienteId: clienteId, status: { $ne: "cancelado" } };
 
             const horaAtual = data.getUTCHours();
             if (!dia && horaAtual < 8) {
@@ -104,7 +104,7 @@ class desempenhoController {
             const inicioUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual, 8, 0, 0)); // 05:00 BRT = 08:00 UTC
             const fimUTC = new Date(Date.UTC(anoAtual, mesAtual, diaAtual + 1, 7, 59, 59)); // 04:59 BRT = 07:59 UTC
 
-            condicoes.horario = { $gte: inicioUTC, $lt: fimUTC };
+            condicoes.createdAt = { $gte: inicioUTC, $lt: fimUTC };
 
             console.log("Condições de Filtro DIÁRIO:", JSON.stringify(condicoes, null, 2)); // ✅ LOG IMPORTANTE
 
@@ -159,7 +159,7 @@ class desempenhoController {
 
             console.log("Cliente ID convertido:", clienteId); // ✅ LOG IMPORTANTE
 
-            const condicoes = { clienteId: clienteId, horario: { $gte: inicio, $lt: fim } };
+            const condicoes = { clienteId: clienteId, createdAt: { $gte: inicio, $lt: fim }, status: { $ne: "cancelado" } };
 
             console.log("Condições de filtro po período: ", condicoes)
 
@@ -190,14 +190,14 @@ class desempenhoController {
                             dia: {
                                 $dateToString: {
                                     format: "%d-%m-%Y",
-                                    date: "$horario",
+                                    date: "$createdAt",
                                     timezone: "America/Sao_Paulo"
                                 }
                             },
                             formaPagamento: "$formaPagamento",
                             diaOriginal: {
                                 $dateTrunc: {
-                                    date: "$horario",
+                                    date: "$createdAt",
                                     unit: "day",
                                     timezone: "America/Sao_Paulo"
                                 }

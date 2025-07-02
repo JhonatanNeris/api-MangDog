@@ -41,34 +41,76 @@ const pagementoSchema = new mongoose.Schema({
 
 });
 
+const deliverySchema = new mongoose.Schema({
+    deliveredBy: { type: String, enum: ['ifood', 'loja'] },
+    deliveryAddress: {
+        streetName: { type: String, required: true },
+        streetNumber: { type: String, required: true },
+        neighborhood: { type: String, required: true },
+        complement: { type: String, required: true },
+        reference: { type: String, required: true },
+        postalCode: { type: String, required: true },
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        country: { type: String, required: true },
+        coordinates: {
+            latitude: { type: Number },
+            longitude: { type: Number }
+        }
+    }
+
+});
+
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
     nomeCliente: { type: String, required: true },
     valorTotal: { type: Number, required: true, min: 0 },
     subtotal: { type: Number, required: true, min: 0 },
     desconto: { type: Number, default: 0, min: 0 },
-    horario: { type: Date, default: Date.now },
+    // horario: { type: Date, default: Date.now },
+    numeroPedido: { type: Number, required: true },
     status: {
         type: String,
-        enum: ['em preparo', 'pronto', 'concluído', 'cancelado'],
+        enum: ['novo', 'em preparo', 'pronto', 'concluído', 'cancelado'],
         default: 'em preparo'
     },
     tipoPedido: {
         type: String,
-        enum: ['comer aqui', 'para viagem'],
+        enum: ['comer aqui', 'para viagem', 'delivery'],
         required: true
     },
-    formaPagamento: {
+    origem: {
         type: String,
-        enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher', 'em aberto'],
-        required: false
+        enum: ['pdv', 'cardápio-digital', 'whatsapp', 'ifood', 'instagram'],
+        default: 'pdv'
+    },
+    intencaoPagamento: {
+        type: String,
+        enum: ['pagamento-local', 'pagamento-online'],
+        required: function () {
+            return this.origem === 'cardápio-digital';
+        }
+    },
+    formaPagamentoPretendida: {
+        type: String,
+        enum: ['cartao', 'pix', 'dinheiro', 'pix-online', 'credito-online'],
+        required: function () {
+            return this.origem === 'cardápio-digital';
+        }
+    },
+    pagamentoOnlineConfirmado: {
+        type: Boolean,
+        default: false
     },
     pagamentos: [pagementoSchema],
     valorPago: { type: Number, default: 0 },
     valorFiado: { type: Number, default: 0 },
     itens: [itemPedidoSchema],
     clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true },
-}, { versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+}, { timestamps: true, versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+
+// TESTANDO LINHA ABAIXO
+pedidoSchema.index({ clienteId: 1, numeroPedido: 1 }, { unique: true });
 
 pedidoSchema.virtual('quantidadeItens').get(function () {
     return this.itens.reduce((total, item) => total + item.quantidade, 0);

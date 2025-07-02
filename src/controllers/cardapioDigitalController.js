@@ -1,5 +1,4 @@
-import { categoria, cliente, produto } from '../models/index.js';
-
+import { categoria, cliente, produto, configuracoes, pedido } from '../models/index.js';
 
 class CardapioDigitalController {
 
@@ -45,13 +44,46 @@ class CardapioDigitalController {
 
             }
 
-            res.status(200).json({restaurante, cardapio})
+            // 🔹 Buscar configurações vinculadas ao cliente
+            const configuracoesCliente = await configuracoes.findOne({ clienteId });
+
+            res.status(200).json({ restaurante, cardapio, configuracoes: configuracoesCliente ?? null })
         } catch (error) {
             next(error);
         }
+    }
 
+    static async criarPedido(req, res, next) {
+        try {
+            const slug = req.params.slug;
+            const dadosPedido = req.body;
 
+            const clienteEncontrado = await cliente.findOne({ slug });
+            if (!clienteEncontrado) {
+                return res.status(404).json({ erro: "Restaurante não encontrado." });
+            }
 
+            // Buscar configurações e incrementar número do pedido
+            const config = await configuracoes.findOneAndUpdate(
+                { clienteId: clienteEncontrado._id },
+                { $inc: { "pedidos.sequencia": 1 } },
+                { new: true }
+            );
+
+            const novoPedido = new pedido({
+                ...dadosPedido,
+                numeroPedido: config.pedidos.sequencia,
+                clienteId: clienteEncontrado._id,
+                origem: 'cardápio-digital',
+                status: 'novo'
+            });
+
+            await novoPedido.save();
+
+            res.status(201).json(novoPedido);
+        } catch (error) {
+            next(error);
+        }
     }
 
 

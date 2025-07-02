@@ -8,6 +8,7 @@ import usuario from './Usuario.js'
 import cliente from './Cliente.js'
 import { grupoComplementos } from './GrupoComplementos.js'
 import consumidor from './Consumidor.js'
+import configuracoes from './Configuracoes.js'
 
 
-export { pedido, categoria, produto, usuario, cliente, grupoComplementos, consumidor }
+export { pedido, categoria, produto, usuario, cliente, grupoComplementos, consumidor, configuracoes }
