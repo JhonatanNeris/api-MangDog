@@ -10,9 +10,9 @@ import mongoose from "mongoose";
 
 //Impressora Online
 import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
-// Função para enviar o pedido para o servidor de impressão local
 
-import { getIO } from '../../socket.js';
+//REMOVENDO SOCKET
+// import { getIO } from '../../socket.js';
 
 class PedidoController {
 
@@ -156,7 +156,7 @@ class PedidoController {
 
             const clienteId = req.usuario.clienteId;
 
-            if(!clienteId){
+            if (!clienteId) {
                 return res.status(500).json({ message: 'inválido' });
             }
 
@@ -229,8 +229,10 @@ class PedidoController {
             // Usar o modelo de pedido para criar o novo pedido
             const pedidoCriado = await pedido.create(pedidoCompleto);
 
-            const io = getIO();
-            io.to(req.usuario.clienteId).emit("pedido:novo", pedidoCriado);
+
+            //REMOVENDO SOCKET
+            // const io = getIO();
+            // io.to(req.usuario.clienteId).emit("pedido:novo", pedidoCriado);
 
             if (!pedidoCriado) {
                 return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
@@ -243,15 +245,16 @@ class PedidoController {
         }
     }
 
-   
+
     static async putPedido(req, res, next) {
 
         try {
             const id = req.params.id
             const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body, { new: true })
 
-            const io = getIO();
-            io.to(req.usuario.clienteId).emit("pedido:atualizado", pedidoEncontrado);
+            //REMOVENDO SOCKET
+            // const io = getIO();
+            // io.to(req.usuario.clienteId).emit("pedido:atualizado", pedidoEncontrado);
 
             if (pedidoEncontrado !== null) {
                 res.status(200).json(pedidoEncontrado)
@@ -299,8 +302,9 @@ class PedidoController {
                 clienteId: req.usuario.clienteId
             })
 
-            const io = getIO();
-            io.to(req.usuario.clienteId).emit("pedido:removido", pedidoApagado);
+            //REMOVENDO SOCKET
+            // const io = getIO();
+            // io.to(req.usuario.clienteId).emit("pedido:removido", pedidoApagado);
 
             if (pedidoApagado !== null) {
                 res.status(200).json({ message: "Pedido excluído!" })
