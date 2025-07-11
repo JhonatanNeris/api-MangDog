@@ -14,6 +14,12 @@ import axios from 'axios'; // Importa o Axios para realizar requisições HTTP
 //REMOVENDO SOCKET
 // import { getIO } from '../../socket.js';
 
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2022-11-15',
+});
+
 class PedidoController {
 
     static async getPedidos(req, res, next) {
@@ -314,6 +320,38 @@ class PedidoController {
         } catch (error) {
             // res.status(500).json({ message: `${error.message} - Falha na exclusão do pedido!` });
             next(error);
+        }
+
+    }
+
+    static async cancelarPedido(req, res, next) {
+        try {
+
+            console.log("cancelando")
+            const pedidoEncontrado = await pedido.findById(req.params.id);
+
+            console.log(pedidoEncontrado)
+
+
+
+            if (!pedidoEncontrado) return res.status(404).json({ erro: 'Pedido não encontrado.' });
+            if (pedidoEncontrado.status === 'cancelado') return res.status(400).json({ erro: 'Pedido já cancelado.' });
+
+            if (pedidoEncontrado.paymentIntentId) {
+                console.log("reembolsar", pedidoEncontrado._id)
+                // Reembolsar
+                await stripe.refunds.create({
+                    payment_intent: pedidoEncontrado.paymentIntentId,
+                });
+            }
+
+            pedidoEncontrado.status = 'cancelado';
+            // pedido.reembolsado = !!pedido.paymentIntentId;
+            await pedidoEncontrado.save();
+
+            res.status(200).json({ ok: true, pedidoCancelado: pedidoEncontrado });
+        } catch (error) {
+
         }
 
     }

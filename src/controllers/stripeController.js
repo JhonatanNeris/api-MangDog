@@ -1,10 +1,9 @@
 import Stripe from 'stripe';
+import { pedido, cliente } from '../models/index.js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2022-11-15',
 });
-
-import cliente from '../models/Cliente.js';
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -35,6 +34,74 @@ class stripeController {
             });
 
             res.json({ url: session.url });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro ao criar sessão de checkout' });
+        }
+
+    }
+
+    static async criarSessaoCheckoutPagamento(req, res, next) {
+
+        try {
+            const { pedidoId, method, slug } = req.body;
+
+            // Buscar pedido
+            const pedidoEncontrado = await pedido.findById(pedidoId);
+
+            if (!pedidoEncontrado) {
+                return res.status(404).json({ erro: 'Pedido não encontrado' });
+            }
+
+            // Buscar cliente
+            const clienteEncontrado = await cliente.findById(pedidoEncontrado.clienteId);
+
+            if (!clienteEncontrado) {
+                return res.status(404).json({ erro: 'Restaurante não encontrado' });
+            }
+
+            const stripeAccountId = clienteEncontrado.stripeAccountId;
+
+            if (!stripeAccountId) {
+                return res.status(400).json({ erro: 'Restaurante não tem conta Stripe conectada.' });
+            }
+
+            //Convertendo o valor da compra para centavos
+            const totalCentavos = Math.round(pedidoEncontrado.valorTotal * 100); // Ex: 23.50 -> 2350
+
+            // Criar sessão de pagamento (checkout session)
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: [{
+                    price_data: {
+                        currency: 'brl',
+                        product_data: {
+                            name: `Pedido no ${clienteEncontrado.nome}`,
+                        },
+                        unit_amount: totalCentavos,
+                    },
+                    quantity: 1,
+                }],
+                mode: 'payment',
+                metadata: {
+                    pedidoId: pedidoEncontrado._id.toString()
+                },
+                success_url: `${process.env.FRONTEND_URL}/cardapio-digital/${slug}/orders`,
+                cancel_url: `${process.env.FRONTEND_URL}/cardapio-digital/${slug}/orders`,
+                payment_intent_data: {
+                    application_fee_amount: Math.round(totalCentavos * 0.1), // 10% de comissão para o sistema bruto
+                    transfer_data: {
+                        destination: stripeAccountId, // dinheiro vai para o restaurante
+                    },
+                },
+            });
+
+            // Salvar o payment_intent no pedido
+            await pedido.findByIdAndUpdate(pedidoId, {
+                paymentIntentId: session.payment_intent
+            });
+
+            res.json({ session });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Erro ao criar sessão de checkout' });
@@ -76,11 +143,14 @@ class stripeController {
                 await restaurante.save();
             }
 
+            console.log("Usando stripeAccountId:", stripeAccountId);
+
+
             // 3. Criar link de onboarding
             const accountLink = await stripe.accountLinks.create({
                 account: stripeAccountId,
-                refresh_url: `${process.env.FRONTEND_URL}/admin/configuracoes/pagamento`,
-                return_url: `${process.env.FRONTEND_URL}/admin/configuracoes/pagamento`,
+                refresh_url: `${process.env.FRONTEND_URL}/admin/configuracoes/cardapio-digital`,
+                return_url: `${process.env.FRONTEND_URL}/admin/configuracoes/cardapio-digital`,
                 type: 'account_onboarding',
             });
 
@@ -151,10 +221,10 @@ class stripeController {
 
             const paymentMethod = await stripe.paymentMethods.retrieve(
                 subscription.default_payment_method
-            );   
-            
+            );
+
             const product = await stripe.products.retrieve(subscription.items.data[0].price.product);
-            
+
             const dadosAssinatura = {
                 status: subscription.status,
                 proximaCobranca: new Date(subscription.current_period_end * 1000),
@@ -224,26 +294,61 @@ class stripeController {
         }
 
         // 🔍 Log básico do evento
-        console.log('💥 Evento recebido:', event);
         console.log('💥 Evento recebido:', event.type);
+        console.log('💥 Evento recebido:', event);
 
         // 🎯 Trate apenas eventos relevantes
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
 
-            const customerId = session.customer;
+            console.log(session, 'Sessao')
 
+            const pedidoId = session.metadata?.pedidoId;
             const clienteId = session.metadata?.clienteId;
 
-            // Aqui você marca o cliente como ativo no seu banco
-            try {
-                await cliente.findByIdAndUpdate(clienteId, {
-                    ativo: true,
-                    stripeCustomerId: customerId
-                });
-                console.log(`✅ Cliente ${clienteId} ativado com sucesso.`);
-            } catch (err) {
-                console.error(`Erro ao ativar cliente: ${err}`);
+            if (!pedidoId) {
+                console.log('sem pedidoId no metadata')
+            }
+
+            if (pedidoId) {
+                try {
+                    // Buscar o pagamento usado
+                    const paymentIntentId = session.payment_intent;
+                    console.log(paymentIntentId, "Paymentstsss intentiom")
+                    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+                    const metodoPagamento = paymentIntent.payment_method_types[0] // 'card' ou 'pix'
+
+                    const metodoTraduzido = metodoPagamento === 'card' ? 'crédito' : 'pix'
+
+                    await pedido.findByIdAndUpdate(pedidoId, {
+                        status: 'novo', // ou 'recebido', 'aguardando preparo' etc
+                        pagamentos: {
+                            valor: session.amount_total / 100,
+                            formaPagamento: metodoTraduzido,
+                            // confirmadoEm: new Date()
+                        },
+                        pagamentoOnlineConfirmado: true,
+                        paymentIntentId
+                    });
+
+                    console.log(`✅ Pedido ${pedidoId} marcado como pago (${metodoPagamento}).`);
+                } catch (err) {
+                    console.error(`Erro ao atualizar pedido ${pedidoId}:`, err);
+                }
+            } else if (clienteId) {
+                // Isso aqui é para o fluxo de assinatura
+                const customerId = session.customer;
+
+                try {
+                    await cliente.findByIdAndUpdate(clienteId, {
+                        ativo: true,
+                        stripeCustomerId: customerId
+                    });
+                    console.log(`✅ Cliente ${clienteId} ativado com sucesso.`);
+                } catch (err) {
+                    console.error(`Erro ao ativar cliente: ${err}`);
+                }
             }
         }
 

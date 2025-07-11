@@ -2,6 +2,7 @@ import { consumidor } from "../models/index.js";
 import bcrypt from 'bcryptjs';
 import NaoEncontrado from "../erros/NaoEncontrado.js";
 import jwt from 'jsonwebtoken';
+import { pedido } from '../models/index.js';
 
 // Chave secreta para assinar o token (guarde isso em variáveis de ambiente em produção)
 const JWT_SECRET = process.env.JWT_SECRET
@@ -65,7 +66,7 @@ class ConsumidorController {
                 // Gerar token JWT
                 const token = jwt.sign(
                     {
-                        id: consumidorEncontrado._id,
+                        _id: consumidorEncontrado._id,
                         nome: consumidorEncontrado.nome,
                         email: consumidorEncontrado.email,
                         telefone: consumidorEncontrado.telefone,
@@ -83,6 +84,38 @@ class ConsumidorController {
             next(error);
         }
     }
+
+    static async getPedidos(req, res, next) {
+        try {
+            const consumidorId = req.consumidor._id; // vem do middleware
+
+            if (!consumidorId) return res.status(404).json({ error: 'Consumidor não localizado' })
+
+            const pedidos = await pedido.find({ customerId: consumidorId }).sort({ createdAt: -1 });
+            res.json(pedidos);
+        } catch (err) {
+            res.status(500).json({ erro: 'Erro ao listar pedidos' });
+        }
+    }
+
+    static async getPedidoId(req, res, next) {
+        try {
+            const consumidorId = req.consumidor._id;
+            const pedidoId = req.params.id;        
+
+            if (!consumidorId) return res.status(404).json({ error: 'Consumidor não localizado' })
+
+            const pedidoEncontrado = await pedido.findOne({ _id: pedidoId, customerId: consumidorId });
+
+            if (!pedidoEncontrado) return res.status(404).json({ erro: 'Pedido não encontrado' });
+
+            res.json(pedidoEncontrado);
+        } catch (err) {
+            res.status(500).json({ erro: 'Erro ao buscar pedido' });
+        }
+    }
+
+
 }
 
 export default ConsumidorController

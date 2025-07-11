@@ -16,7 +16,8 @@ routes.post("/consumidor/login", ConsumidorController.loginConsumidor)
 routes.get("/consumidor/validar-token", autenticarConsumidor, (req, res) => {
     return res.status(200).json(req.consumidor);
 })
-// routes.post("/usuarios/register/", autenticarToken, UsuarioController.postUsuario)
+routes.get("/consumidor/pedidos/", autenticarConsumidor, ConsumidorController.getPedidos)
+routes.get("/consumidor/pedidos/:id", autenticarConsumidor, ConsumidorController.getPedidoId)
 // routes.put("/usuarios/:id", autenticarToken, UsuarioController.putUsuario)
 // routes.delete("/usuarios/:id", autenticarToken, UsuarioController.deleteUsuario)
 

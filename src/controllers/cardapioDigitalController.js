@@ -1,4 +1,4 @@
-import { categoria, cliente, produto, configuracoes, pedido } from '../models/index.js';
+import { categoria, cliente, produto, configuracoes, pedido, consumidor } from '../models/index.js';
 
 class CardapioDigitalController {
 
@@ -20,7 +20,7 @@ class CardapioDigitalController {
 
             const listaProdutos = await produto.find({ clienteId }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
 
-            console.log(listaProdutos)
+            // console.log(listaProdutos)
 
             // Agrupar produtos por categoria
             const cardapio = listaCategorias.map((cat) => {
@@ -57,6 +57,7 @@ class CardapioDigitalController {
         try {
             const slug = req.params.slug;
             const dadosPedido = req.body;
+            const consumidor = req.consumidor
 
             const clienteEncontrado = await cliente.findOne({ slug });
             if (!clienteEncontrado) {
@@ -70,12 +71,15 @@ class CardapioDigitalController {
                 { new: true }
             );
 
+            const statusCheck = dadosPedido.intencaoPagamento === 'offline' ? "novo" : "pagamento pendente"
+
             const novoPedido = new pedido({
                 ...dadosPedido,
                 numeroPedido: config.pedidos.sequencia,
                 clienteId: clienteEncontrado._id,
+                customerId: consumidor._id,
                 origem: 'cardápio-digital',
-                status: 'novo'
+                status: statusCheck
             });
 
             await novoPedido.save();

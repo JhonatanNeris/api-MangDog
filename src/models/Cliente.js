@@ -18,6 +18,15 @@ const ClienteSchema = new mongoose.Schema({
     plano: { type: String, enum: ["basico", "bruto"] },
     slug: { type: String, unique: true },
     assinaturaAtiva: { type: Boolean, default: false },
+    integracaoIfood: {
+        ativo: { type: Boolean, default: false },
+        accessToken: String,
+        refreshToken: String,
+        tokenExpiresAt: Date,
+        idLojaIfood: String,
+        // webhookUrl: String,
+        ultimoPedidoImportado: Date,
+    },
     criadoEm: { type: Date, default: Date.now },
 }, { versionKey: false });
 

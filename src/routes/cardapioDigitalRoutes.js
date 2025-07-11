@@ -5,12 +5,13 @@ import express from 'express'
 import CardapioDigitalController from '../controllers/cardapioDigitalController.js'
 
 //MIDDLEWARES
-import autenticarToken from '../middlewares/autenticarToken.js'
+import { autenticarConsumidor } from '../middlewares/autenticarTokenConsumidor.js'
+
 
 const routes = express.Router()
 
 routes.get("/cardapio-digital/restaurante/:slug", CardapioDigitalController.getRestaurante)
-routes.post("/cardapio-digital/novo-pedido/:slug", CardapioDigitalController.criarPedido);
+routes.post("/cardapio-digital/novo-pedido/:slug", autenticarConsumidor, CardapioDigitalController.criarPedido);
 
 
 export default routes

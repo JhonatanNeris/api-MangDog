@@ -41,6 +41,20 @@ const pagementoSchema = new mongoose.Schema({
 
 });
 
+const methodsSchema = new mongoose.Schema({
+    value: { type: Number, required: true },
+    method: { type: String, enum: ['débito', 'crédito', 'pix', 'dinheiro', 'voucher'] },
+    type: { type: String, enum: ['online', 'offline'] },
+
+});
+
+const paymentSchema = new mongoose.Schema({
+    prepaid: { type: Number },
+    pending: { type: Number },
+    methods: [methodsSchema],
+
+});
+
 const deliverySchema = new mongoose.Schema({
     deliveredBy: { type: String, enum: ['ifood', 'loja'] },
     deliveryAddress: {
@@ -63,7 +77,9 @@ const deliverySchema = new mongoose.Schema({
 
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
+    idExterno: String,
     nomeCliente: { type: String, required: true },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'consumidores', required: false },
     valorTotal: { type: Number, required: true, min: 0 },
     subtotal: { type: Number, required: true, min: 0 },
     desconto: { type: Number, default: 0, min: 0 },
@@ -71,7 +87,7 @@ const pedidoSchema = new mongoose.Schema({
     numeroPedido: { type: Number, required: true },
     status: {
         type: String,
-        enum: ['novo', 'em preparo', 'pronto', 'concluído', 'cancelado'],
+        enum: ['pagamento pendente', 'novo', 'em preparo', 'pronto', 'entregando', 'concluído', 'cancelado'],
         default: 'em preparo'
     },
     tipoPedido: {
@@ -86,14 +102,14 @@ const pedidoSchema = new mongoose.Schema({
     },
     intencaoPagamento: {
         type: String,
-        enum: ['pagamento-local', 'pagamento-online'],
+        enum: ['offline', 'online'],
         required: function () {
             return this.origem === 'cardápio-digital';
         }
     },
     formaPagamentoPretendida: {
         type: String,
-        enum: ['cartao', 'pix', 'dinheiro', 'pix-online', 'credito-online'],
+        enum: ['cartao', 'pix', 'dinheiro'],
         required: function () {
             return this.origem === 'cardápio-digital';
         }
@@ -102,7 +118,11 @@ const pedidoSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    paymentIntentId: {
+        type: String
+    },
     pagamentos: [pagementoSchema],
+    pagamento: { type: paymentSchema },
     valorPago: { type: Number, default: 0 },
     valorFiado: { type: Number, default: 0 },
     itens: [itemPedidoSchema],

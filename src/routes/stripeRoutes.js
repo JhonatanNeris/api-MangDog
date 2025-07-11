@@ -11,6 +11,7 @@ import autenticarToken from '../middlewares/autenticarToken.js'
 const routes = express.Router()
 
 routes.post("/create-checkout-session", stripeController.criarSessaoCheckout)
+routes.post("/stripe/create-checkout-session/payment", stripeController.criarSessaoCheckoutPagamento)
 routes.post("/stripe/criar-conta", autenticarToken, stripeController.criarContaStripeCheckout)
 routes.get("/stripe/status-conta", autenticarToken, stripeController.statusContaStripe)
 routes.get("/stripe/status-assinatura", autenticarToken, stripeController.getStatusAssinatura)
