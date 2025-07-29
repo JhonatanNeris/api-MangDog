@@ -30,20 +30,18 @@ class ProdutoController {
     static async getCardapio(req, res, next) {
 
         try {
-            const slug = req.params.slug
+            const id = req.usuario.clienteId
 
             // Buscar cliente pelo slug
-            const clienteEncontrado = await cliente.findOne({ slug });
+            // const clienteEncontrado = await cliente.findOne({ slug });
 
-            if (!clienteEncontrado) {
-                throw new Error("Cliente não encontrado com esse slug.");
+            if (!id) {
+                throw new Error("Cliente não encontrado");
             }
 
-            const clienteId = clienteEncontrado._id;
+            const listaCategorias = await categoria.find({ clienteId: id })
 
-            const listaCategorias = await categoria.find({ clienteId })
-
-            const listaProdutos = await produto.find({ clienteId }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
+            const listaProdutos = await produto.find({ clienteId: id }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
 
             console.log(listaProdutos)
 
@@ -55,7 +53,7 @@ class ProdutoController {
 
                 return {
                     _id: cat._id,
-                    nome: cat.nome,
+                    nomeCategoria: cat.nome,
                     produtos: produtosDaCategoria,
                 };
             });
@@ -191,6 +189,7 @@ class ProdutoController {
                 categoria: categoriaId,
                 grupoComplementos,
                 removerImagem, // opcional: enviado como string 'true' se quiser remover imagem
+                disponivel
             } = req.body;
 
             const precoConvertido = parseFloat(preco);
@@ -256,6 +255,7 @@ class ProdutoController {
                     categoria: categoriaEncontrada ? { ...categoriaEncontrada._doc } : null,
                     grupoComplementos: grupoComplementosArray,
                     imagemUrl,
+                    disponivel: disponivel === 'true'
                 },
             );
 

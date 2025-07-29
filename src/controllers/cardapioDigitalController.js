@@ -30,7 +30,7 @@ class CardapioDigitalController {
 
                 return {
                     _id: cat._id,
-                    nome: cat.nome,
+                    nomeCategoria: cat.nome,
                     produtos: produtosDaCategoria,
                 };
             });

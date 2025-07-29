@@ -89,7 +89,7 @@ class stripeController {
                 success_url: `${process.env.FRONTEND_URL}/cardapio-digital/${slug}/orders`,
                 cancel_url: `${process.env.FRONTEND_URL}/cardapio-digital/${slug}/orders`,
                 payment_intent_data: {
-                    application_fee_amount: Math.round(totalCentavos * 0.1), // 10% de comissão para o sistema bruto
+                    application_fee_amount: Math.round(totalCentavos * 0.01), // 1% de comissão para o sistema bruto
                     transfer_data: {
                         destination: stripeAccountId, // dinheiro vai para o restaurante
                     },
