@@ -2,6 +2,10 @@ import { cliente, usuario } from "../models/index.js"
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { bucket } from '../utils/storage.js';
+import { v4 as uuidv4 } from 'uuid';
+import sharp from 'sharp';
+
 // Chave secreta para assinar o token (guarde isso em variáveis de ambiente em produção)
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -76,12 +80,14 @@ class ClienteController {
 
             // 1 - Cadastrar cliente
             const novoCliente = new cliente({
-                nome: nomeRestaurante,
+                loja: {
+                    nome: nomeRestaurante,
+                    slug
+                },
                 cnpj,
                 emailContato: email,
                 telefoneContato: telefone,
                 plano,
-                slug,
                 ativo: false,
             })
 
@@ -132,17 +138,99 @@ class ClienteController {
     }
 
     static async putCliente(req, res, next) {
-
         try {
-            const id = req.params.id
+            const clienteId = req.usuario.clienteId;
+            const body = req.body;
 
-            await cliente.findOneAndUpdate({ _id: id }, req.body)
-            res.status(200).json({ message: "Cliente atualizado com sucesso!" })
+            console.log(clienteId)
+            console.log(body)
+
+            const update = {
+                "loja.nome": body["loja.nome"],
+                "loja.telefone": body["loja.telefone"],
+                "loja.descricao": body["loja.descricao"],
+                "loja.pedidoMinimo": body["loja.pedidoMinimo"],
+                "loja.endereco.cep": body["loja.endereco.cep"],
+                "loja.endereco.logradouro": body["loja.endereco.logradouro"],
+                "loja.endereco.numero": body["loja.endereco.numero"],
+                "loja.endereco.complemento": body["loja.endereco.complemento"],
+                "loja.endereco.bairro": body["loja.endereco.bairro"],
+                "loja.endereco.cidade": body["loja.endereco.cidade"],
+                "loja.endereco.estado": body["loja.endereco.estado"],
+            };
+
+            const latitudeStr = body["loja.endereco.latitude"];
+            const longitudeStr = body["loja.endereco.longitude"];
+
+            if (
+                latitudeStr &&
+                longitudeStr &&
+                !isNaN(parseFloat(latitudeStr)) &&
+                !isNaN(parseFloat(longitudeStr))
+            ) {
+                update["loja.endereco.coordenadas"] = {
+                    latitude: parseFloat(latitudeStr),
+                    longitude: parseFloat(longitudeStr),
+                };
+            }
+
+
+            let imagemUrl = null;
+
+            if (req.file) {
+                // const extensao = req.file.originalname.split('.').pop();
+                const nomeArquivo = `clientes/${req.usuario.clienteId}/logo/${uuidv4()}.webp`;
+
+                const imagemProcessada = await sharp(req.file.buffer)
+                    .rotate()
+                    .resize(800, 800) // largura máxima
+                    .webp({ quality: 90 }) // compressão .webp com qualidade razoável
+                    .toBuffer();
+
+                const blob = bucket.file(nomeArquivo);
+                try {
+                    await new Promise((resolve, reject) => {
+                        const stream = blob.createWriteStream({
+                            resumable: false,
+                            contentType: req.file.mimetype,
+                            // public: true,
+                            metadata: {
+                                cacheControl: 'public, max-age=31536000',
+                            },
+                        });
+
+                        stream.on('error', (err) => {
+                            console.error('Erro no upload da imagem:', err);
+                            reject(err);
+                        });
+
+                        stream.on('finish', () => {
+                            console.log('Upload finalizado com sucesso!');
+                            resolve();
+                        });
+
+                        stream.end(imagemProcessada);
+                    });
+                } catch (err) {
+                    return res.status(500).json({ erro: 'Falha ao fazer upload da imagem', detalhe: err.message });
+                }
+
+
+                imagemUrl = `https://storage.googleapis.com/${bucket.name}/${nomeArquivo}`;
+                update["loja.logoUrl"] = imagemUrl;
+
+            }
+
+            console.log(update)
+
+            await cliente.findByIdAndUpdate(clienteId, { $set: update });
+
+            res.status(200).json({ message: "Cliente atualizado com sucesso!" });
         } catch (error) {
             next(error);
         }
-
     }
+
 
 }
 

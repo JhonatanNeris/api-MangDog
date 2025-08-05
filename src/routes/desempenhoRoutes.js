@@ -13,5 +13,6 @@ const routes = express.Router()
 routes.get("/desempenho/", autenticarToken, DesempenhoController.getDesempenho)
 routes.get("/desempenho/diario", autenticarToken, DesempenhoController.getDesempenhoDiario)
 routes.get("/desempenho/periodo", autenticarToken, DesempenhoController.getDesempenhoPorPeriodo)
+routes.get("/desempenho/geral", autenticarToken, DesempenhoController.relatorioGeral)
 
 export default routes

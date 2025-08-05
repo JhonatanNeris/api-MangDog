@@ -6,13 +6,15 @@ import clienteController from '../controllers/clienteController.js'
 
 import autenticarToken from "../middlewares/autenticarToken.js";
 
+import upload from '../middlewares/uploadImage.js'
+
 
 const routes = express.Router()
 
 routes.get("/clientes/", clienteController.getClientes)
 routes.get("/cliente-logado/", autenticarToken, clienteController.getClienteLogado)
 routes.post("/clientes/register/", clienteController.postClienteEUsuario)
-routes.put("/clientes/:id", clienteController.putCliente)
+routes.put("/clientes/", autenticarToken, upload.single("imagem"), clienteController.putCliente)
 // routes.get("/usuarios/validar-token", autenticarToken, (req, res) => {
     // return res.status(200).json({ user: req.usuario });
 // })

@@ -76,7 +76,7 @@ class stripeController {
                     price_data: {
                         currency: 'brl',
                         product_data: {
-                            name: `Pedido no ${clienteEncontrado.nome}`,
+                            name: `Pedido no ${clienteEncontrado.loja.nome}`,
                         },
                         unit_amount: totalCentavos,
                     },

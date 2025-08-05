@@ -246,6 +246,153 @@ class desempenhoController {
         }
     }
 
+    static async relatorioGeral(req, res) {
+        try {
+            const {
+                dataInicio,
+                dataFim,
+                tipoPedido,
+                formaPagamento,
+                status,
+                agrupamento = 'dia',
+                horarioInicio = '00:00',
+                horarioFim = '23:59',
+            } = req.query;
+
+            // Processar os horários enviados
+            const [hiH, hiM] = horarioInicio.split(':').map(Number);
+            const [hfH, hfM] = horarioFim.split(':').map(Number);
+
+            const inicio = new Date(`${dataInicio}T${String(hiH).padStart(2, '0')}:${String(hiM).padStart(2, '0')}:00-03:00`);
+            const fim = new Date(`${dataFim}T${String(hfH).padStart(2, '0')}:${String(hfM).padStart(2, '0')}:59.999-03:00`);
+
+            const match = {
+                createdAt: { $gte: inicio, $lte: fim },
+                // Nao contabiliza cancelados
+                status: { $ne: 'cancelado' }
+            };
+
+
+            console.log(match)
+
+            if (tipoPedido) match.tipoPedido = tipoPedido;
+            if (status) match.status = status;
+            if (formaPagamento) match['pagamentos.formaPagamento'] = formaPagamento;
+
+            let dateFormat;
+            if (agrupamento === 'mes') dateFormat = '%Y-%m';
+            else if (agrupamento === 'semana') {
+                dateFormat = {
+                    $concat: [
+                        { $toString: { $isoWeekYear: '$createdAt' } },
+                        '-W',
+                        {
+                            $cond: [
+                                { $lt: [{ $isoWeek: '$createdAt' }, 10] },
+                                { $concat: ['0', { $toString: { $isoWeek: '$createdAt' } }] },
+                                { $toString: { $isoWeek: '$createdAt' } }
+                            ]
+                        }
+                    ]
+                };
+            } else {
+                dateFormat = '%Y-%m-%d';
+            }
+
+            const pedidos = await pedido.find(match);
+
+            const vendasPorDia = await pedido.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: dateFormat, date: '$createdAt', timezone: 'America/Sao_Paulo' } },
+                        total: { $sum: '$valorTotal' },
+                        quantidade: { $sum: 1 },
+                    },
+                },
+                { $sort: { _id: 1 } },
+            ]);
+
+            const itensMaisVendidos = await pedido.aggregate([
+                { $match: match },
+                { $unwind: '$itens' },
+                {
+                    $group: {
+                        _id: '$itens.nome',
+                        quantidade: { $sum: '$itens.quantidade' },
+                    },
+                },
+                {
+                    $project: {
+                        nome: '$_id',
+                        quantidade: 1,
+                        _id: 0,
+                    },
+                },
+                { $sort: { quantidade: -1 } },
+                { $limit: 10 },
+            ]);
+
+            const formasPagamento = await pedido.aggregate([
+                { $match: match },
+                { $unwind: '$pagamentos' },
+                {
+                    $group: {
+                        _id: '$pagamentos.formaPagamento',
+                        valor: { $sum: '$pagamentos.valor' },
+                    },
+                },
+                {
+                    $project: {
+                        forma: '$_id',
+                        valor: 1,
+                        _id: 0,
+                    },
+                },
+            ]);
+
+            const cancelados = await pedido.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: inicio, $lte: fim },
+                        status: 'cancelado'
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        quantidade: { $sum: 1 },
+                        valor: { $sum: '$valorTotal' }
+                    }
+                }
+            ]);
+
+            const quantidadeCancelados = cancelados[0]?.quantidade || 0;
+            const valorCancelados = cancelados[0]?.valor || 0;
+
+
+            const totalVendas = pedidos.reduce((soma, p) => soma + (p.valorTotal || 0), 0);
+            const ticketMedio = pedidos.length ? totalVendas / pedidos.length : 0;
+            // const cancelados = pedidos.filter(p => p.status === 'cancelado').length;
+
+            res.json({
+                totalVendas,
+                ticketMedio,
+                quantidadePedidos: pedidos.length,
+                cancelados: {
+                    quantidade: quantidadeCancelados,
+                    valor: valorCancelados
+                },
+                vendasPorDia: vendasPorDia.map(d => ({ data: d._id, total: d.total })),
+                itensMaisVendidos,
+                formasPagamento,
+            });
+        } catch (erro) {
+            console.error(erro);
+            res.status(500).json({ erro: 'Erro ao gerar relatório' });
+        }
+    }
+
 
 }
 

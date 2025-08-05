@@ -2,12 +2,34 @@ import mongoose from "mongoose"
 
 const ClienteSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
-    nome: { type: String, required: true },
     cnpj: { type: String, unique: true },
     tema: { type: String, default: "padrão" },
-    logoUrl: { type: String },
     emailContato: { type: String, required: true },
     telefoneContato: { type: String, required: true },
+    loja: {
+        nome: { type: String, required: true },
+        slug: { type: String, unique: true },
+        logoUrl: { type: String },
+        descricao: { type: String },
+        telefone: { type: String },
+        pedidoMinimo: { type: Number },
+        endereco: {
+            logradouro: { type: String, required: true },
+            numero: { type: String },
+            bairro: { type: String, required: true },
+            complemento: { type: String, required: true },
+            referencia: { type: String },
+            cep: { type: String, required: true },
+            cidade: { type: String, required: true },
+            estado: { type: String, required: true },
+            pais: { type: String, default: "BR" },
+            coordenadas: {
+                latitude: { type: Number },
+                longitude: { type: Number }
+            }
+        }
+
+    },
     stripeCustomerId: { type: String },
     stripeAccountId: { type: String },
     stripeStatus: {
@@ -16,7 +38,6 @@ const ClienteSchema = new mongoose.Schema({
         default: 'nao-criado'
     },
     plano: { type: String, enum: ["basico", "bruto"] },
-    slug: { type: String, unique: true },
     assinaturaAtiva: { type: Boolean, default: false },
     integracaoIfood: {
         ativo: { type: Boolean, default: false },

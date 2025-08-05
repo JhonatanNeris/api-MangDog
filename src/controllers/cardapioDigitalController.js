@@ -36,10 +36,12 @@ class CardapioDigitalController {
             });
 
             const restaurante = {
-                nome: clienteEncontrado.nome,
-                logoUrl: clienteEncontrado.logoUrl,
-                telefone: clienteEncontrado.telefoneContato,
-                slug: clienteEncontrado.slug,
+                nome: clienteEncontrado.loja.nome,
+                logoUrl: clienteEncontrado.loja.logoUrl,
+                telefone: clienteEncontrado.loja.telefone,
+                slug: clienteEncontrado.loja.slug,
+                pedidoMinimo: clienteEncontrado.loja.pedidoMinimo,
+                endereco: clienteEncontrado.loja.endereco,
                 //Adicioar mais informações depois,
 
             }

@@ -68,7 +68,7 @@ class UsuarioController {
         }
 
         // Adicione o nome do cliente ao objeto usuario
-        const clienteNome = clienteEncontrado.nome;
+        const clienteNome = clienteEncontrado.loja.nome;
 
         // Gerar token JWT
         const token = jwt.sign(
