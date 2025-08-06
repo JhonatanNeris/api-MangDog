@@ -299,7 +299,35 @@ class desempenhoController {
                 dateFormat = '%Y-%m-%d';
             }
 
-            const pedidos = await pedido.find(match);
+            // const pedidos = await pedido.find(match);
+
+            const resumo = await pedido.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: null,
+                        totalVendas: {
+                            $sum: {
+                                $cond: [
+                                    { $ne: ['$status', 'cancelado'] },
+                                    '$valorTotal',
+                                    0
+                                ]
+                            }
+                        },
+                        quantidadePedidos: {
+                            $sum: {
+                                $cond: [
+                                    { $ne: ['$status', 'cancelado'] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+
 
             const vendasPorDia = await pedido.aggregate([
                 { $match: match },
@@ -370,15 +398,17 @@ class desempenhoController {
             const quantidadeCancelados = cancelados[0]?.quantidade || 0;
             const valorCancelados = cancelados[0]?.valor || 0;
 
+            const { totalVendas = 0, quantidadePedidos = 0 } = resumo[0] || {};
+            const ticketMedio = quantidadePedidos ? totalVendas / quantidadePedidos : 0;
 
-            const totalVendas = pedidos.reduce((soma, p) => soma + (p.valorTotal || 0), 0);
-            const ticketMedio = pedidos.length ? totalVendas / pedidos.length : 0;
-            // const cancelados = pedidos.filter(p => p.status === 'cancelado').length;
+
+            // const totalVendas = pedidos.reduce((soma, p) => soma + (p.valorTotal || 0), 0);
+            // const ticketMedio = pedidos.length ? totalVendas / pedidos.length : 0;
 
             res.json({
                 totalVendas,
                 ticketMedio,
-                quantidadePedidos: pedidos.length,
+                quantidadePedidos,
                 cancelados: {
                     quantidade: quantidadeCancelados,
                     valor: valorCancelados

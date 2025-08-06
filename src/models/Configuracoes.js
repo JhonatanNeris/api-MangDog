@@ -9,7 +9,9 @@ const FormaPagamentoSchema = new mongoose.Schema({
 const ConfiguracoesSchema = new mongoose.Schema({
     clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true, unique: true }, // Referência ao cliente
     pedidos: {
-        sequencia: { type: Number, default: 0 }
+        sequencia: { type: Number, default: 0 },
+        resetSequenciaDias: { type: Number, default: 0 },
+        ultimoResetSequencia: { type: Date }
     },
     monitorKds: {
         contadores: [{

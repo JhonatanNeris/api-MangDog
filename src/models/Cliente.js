@@ -39,6 +39,11 @@ const ClienteSchema = new mongoose.Schema({
     },
     plano: { type: String, enum: ["basico", "bruto"] },
     assinaturaAtiva: { type: Boolean, default: false },
+    tokenImpressao: {
+        token: String,
+        criadoEm: Date,
+        ativo: { type: Boolean, default: true }
+    },
     integracaoIfood: {
         ativo: { type: Boolean, default: false },
         accessToken: String,

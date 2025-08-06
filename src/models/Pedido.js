@@ -75,6 +75,12 @@ const deliverySchema = new mongoose.Schema({
 
 });
 
+const impressaoSchema = new mongoose.Schema({
+    imprimir: { type: Boolean, default: false },
+    requisicaoImpressao: { type: Date, default: null },
+    impressoEm: { type: Date, default: null },
+});
+
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
     idExterno: String,
@@ -85,6 +91,7 @@ const pedidoSchema = new mongoose.Schema({
     desconto: { type: Number, default: 0, min: 0 },
     // horario: { type: Date, default: Date.now },
     numeroPedido: { type: Number, required: true },
+    impressao: { type: impressaoSchema },
     status: {
         type: String,
         enum: ['pagamento pendente', 'novo', 'em preparo', 'pronto', 'entregando', 'concluído', 'cancelado'],
