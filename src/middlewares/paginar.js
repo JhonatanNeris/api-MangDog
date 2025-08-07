@@ -1,4 +1,4 @@
-import RequicicaoIncorreta from "../erros/RequisicaoIncorreta.js"
+import RequisicaoIncorreta from "../erros/RequisicaoIncorreta.js";
 
 async function paginar(req, res, next) {
     try {
@@ -31,7 +31,7 @@ async function paginar(req, res, next) {
                 totalResults: total
             });
         } else {
-            next(new RequicicaoIncorreta())
+            next(new RequisicaoIncorreta());
         }
 
     } catch (error) {

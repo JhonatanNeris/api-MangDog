@@ -1,6 +1,6 @@
 import { pedido, configuracoes } from '../models/index.js';
 import NaoEncontrado from "../erros/NaoEncontrado.js";
-import RequicicaoIncorreta from '../erros/RequisicaoIncorreta.js';
+import RequisicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
 // Impressora 
 import { printText } from '../utils/printerService.js';
