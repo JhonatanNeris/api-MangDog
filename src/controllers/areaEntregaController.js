@@ -42,7 +42,7 @@ class AreaEntregaController {
                 ...req.body,
                 clienteId: req.usuario.clienteId
             })
-            res.status(201).json({ message: 'Cadastrado com sucesso!', areaEntrega: novaAreaEntrega })
+            res.status(201).json(novaAreaEntrega )
         } catch (error) {
             next(error);
         }
@@ -52,10 +52,10 @@ class AreaEntregaController {
 
         try {
             const id = req.params.id
-            const areaEntregaAtualizada = await areaEntrega.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body)
+            const areaEntregaAtualizada = await areaEntrega.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body, { new: true })
 
             if (areaEntregaAtualizada !== null) {
-                res.status(200).json({ message: "Área de entrega atualizada!"})
+                res.status(200).json(areaEntregaAtualizada)
             } else {
                 next(new NaoEncontrado('Id da área não localizado'))
             }
