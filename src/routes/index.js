@@ -12,6 +12,7 @@ import consumidores from './consumidorRoutes.js'
 import cardapioDigital from './cardapioDigitalRoutes.js'
 import configuracoes from './configuracoesRoutes.js'
 import ifood from './ifoodRoutes.js'
+import areaEntrega from './areaEntregaRoutes.js'
 
 import stripeController from "../controllers/stripeController.js";
 
@@ -22,7 +23,7 @@ const routes = (app) => {
   app.post("/webhook", express.raw({ type: 'application/json' }), stripeController.webhook);
 
 
-  app.use(express.json(), categorias, produtos, pedidos, usuarios, desempenho, clientes, grupoComplementos, stripe, consumidores, cardapioDigital, configuracoes, ifood);
+  app.use(express.json(), categorias, produtos, pedidos, usuarios, desempenho, clientes, grupoComplementos, stripe, consumidores, cardapioDigital, configuracoes, ifood, areaEntrega);
 };
 
 export default routes;
