@@ -32,6 +32,6 @@ const entregadorSchema = new mongoose.Schema({
     timestamps: true, versionKey: false
 });
 
-const entregador = mongoose.model("entregador", entregadorSchema);
+const entregador = mongoose.model("entregadores", entregadorSchema);
 
 export default entregador;

@@ -56,14 +56,17 @@ const paymentSchema = new mongoose.Schema({
 });
 
 const deliverySchema = new mongoose.Schema({
+    mode: { type: String, enum: ['DEFAULT', 'EXPRESS', 'HIGH_DENSITY', 'TURBO'], default: 'DEFAULT' },
     deliveredBy: { type: String, enum: ['ifood', 'loja'] },
+    observations: { type: String },
+    pickupCode: { type: String },
     deliveryAddress: {
         streetName: { type: String, required: true },
         streetNumber: { type: String, required: true },
         neighborhood: { type: String, required: true },
         complement: { type: String, required: true },
         reference: { type: String, required: true },
-        postalCode: { type: String, required: true },
+        postalCode: { type: String },
         city: { type: String, required: true },
         state: { type: String, required: true },
         country: { type: String, required: true },
@@ -71,8 +74,11 @@ const deliverySchema = new mongoose.Schema({
             latitude: { type: Number },
             longitude: { type: Number }
         }
-    }
-
+    },
+    deliveryFee: { type: Number, default: 0 }, // Taxa de entrega
+    deliveryTime: { type: Number }, // Tempo estimado de entrega em minutos
+    deliveryAreaId: { type: mongoose.Schema.Types.ObjectId, ref: "areaentregas" },
+    deliveryPersonId: { type: mongoose.Schema.Types.ObjectId, ref: "entregadores" }
 });
 
 const impressaoSchema = new mongoose.Schema({
@@ -92,6 +98,7 @@ const pedidoSchema = new mongoose.Schema({
     // horario: { type: Date, default: Date.now },
     numeroPedido: { type: Number, required: true },
     impressao: { type: impressaoSchema },
+    delivery: { type: deliverySchema },
     status: {
         type: String,
         enum: ['pagamento pendente', 'novo', 'em preparo', 'pronto', 'entregando', 'concluído', 'cancelado'],
