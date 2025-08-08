@@ -8,6 +8,7 @@ import express from 'express'
 
 import ConsumidorController from '../controllers/consumidorController.js'
 import { autenticarConsumidor } from '../middlewares/autenticarTokenConsumidor.js'
+import autenticarToken from '../middlewares/autenticarToken.js'
 
 const routes = express.Router()
 
@@ -18,7 +19,6 @@ routes.get("/consumidor/validar-token", autenticarConsumidor, (req, res) => {
 })
 routes.get("/consumidor/pedidos/", autenticarConsumidor, ConsumidorController.getPedidos)
 routes.get("/consumidor/pedidos/:id", autenticarConsumidor, ConsumidorController.getPedidoId)
-// routes.put("/usuarios/:id", autenticarToken, UsuarioController.putUsuario)
-// routes.delete("/usuarios/:id", autenticarToken, UsuarioController.deleteUsuario)
+routes.get("/consumidor-por-telefone", autenticarToken, ConsumidorController.getConsumidorPorTelefone)
 
 export default routes

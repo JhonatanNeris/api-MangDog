@@ -101,7 +101,7 @@ class ConsumidorController {
     static async getPedidoId(req, res, next) {
         try {
             const consumidorId = req.consumidor._id;
-            const pedidoId = req.params.id;        
+            const pedidoId = req.params.id;
 
             if (!consumidorId) return res.status(404).json({ error: 'Consumidor não localizado' })
 
@@ -114,6 +114,35 @@ class ConsumidorController {
             res.status(500).json({ erro: 'Erro ao buscar pedido' });
         }
     }
+
+    static async getConsumidorPorTelefone(req, res, next) {
+        try {
+            const { telefone } = req.query;
+
+            if (!telefone) {
+                return res.status(400).json({ message: 'Telefone é obrigatório' });
+            }
+
+            const consumidorEncontrado = await consumidor.findOne({ telefone });
+
+            if (!consumidorEncontrado) {
+                return res.status(404).json({ message: 'Consumidor não encontrado' });
+            }
+
+            // Você pode retornar apenas os dados que quiser expor
+            res.json({
+                _id: consumidorEncontrado._id,
+                nome: consumidorEncontrado.nome,
+                email: consumidorEncontrado.email,
+                documentNumber: consumidorEncontrado.documentNumber,
+                telefone: consumidorEncontrado.telefone,
+                endereco: consumidorEncontrado.address ?? null
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
 
 }
