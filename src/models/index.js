@@ -10,6 +10,7 @@ import { grupoComplementos } from './GrupoComplementos.js'
 import consumidor from './Consumidor.js'
 import configuracoes from './Configuracoes.js'
 import areaEntrega from './AreaEntrega.js'
+import entregador from './Entregador.js'
 
 
-export { pedido, categoria, produto, usuario, cliente, grupoComplementos, consumidor, configuracoes, areaEntrega }
+export { pedido, categoria, produto, usuario, cliente, grupoComplementos, consumidor, configuracoes, areaEntrega, entregador }
