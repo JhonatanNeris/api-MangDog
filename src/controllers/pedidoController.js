@@ -204,9 +204,27 @@ class PedidoController {
                 return item;
             });
 
-            // Aplicar desconto e calcular valor total
-            valorTotal = Math.max(0, subtotal - descontoAplicado); // Evita valores negativos
+            // Verifica se o tipo de pedido é delivery e se há informações de entrega
+            if (tipoPedido === 'delivery' && delivery) {
+                // Verifica se a área de entrega foi selecionada
+                if (!delivery.deliveryAreaId) {
+                    return res.status(400).json({ message: 'Área de entrega não selecionada.' });
+                }
+                // Verifica se o endereço de entrega foi preenchido
+                if (!delivery.deliveryAddress || !delivery.deliveryAddress.streetName || !delivery.deliveryAddress.neighborhood) {
+                    return res.status(400).json({ message: 'Endereço de entrega incompleto, preencha bairo e logradouro' });
+                }
+                // Verifica se a taxa de entrega foi definida
+                if (delivery.deliveryFee === undefined || delivery.deliveryFee < 0) {
+                    return res.status(400).json({ message: 'Taxa de entrega inválida.' });
+                }
+            } else if (tipoPedido === 'delivery') {
+                return res.status(400).json({ message: 'Informações de entrega ausentes.' });
+            }
 
+            // Regra comum: desconto NÃO abate a taxa de entrega
+            valorTotal = Math.max(0, (subtotal - descontoAplicado) + delivery.deliveryFee || 0); // Evita valores negativos
+          
             // Soma de todos os pagamentos enviados
             const valorPago = (pagamentos || []).reduce((acc, curr) => acc + parseFloat(curr.valor || 0), 0);
 
