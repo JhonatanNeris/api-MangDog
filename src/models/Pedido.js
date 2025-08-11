@@ -57,19 +57,19 @@ const paymentSchema = new mongoose.Schema({
 
 const deliverySchema = new mongoose.Schema({
     mode: { type: String, enum: ['DEFAULT', 'EXPRESS', 'HIGH_DENSITY', 'TURBO'], default: 'DEFAULT' },
-    deliveredBy: { type: String, enum: ['ifood', 'loja'] },
+    deliveredBy: { type: String, enum: ['ifood', 'loja'], default: 'loja' },
     observations: { type: String },
     pickupCode: { type: String },
     deliveryAddress: {
         streetName: { type: String, required: true },
-        streetNumber: { type: String, required: true },
+        streetNumber: { type: String},
         neighborhood: { type: String, required: true },
-        complement: { type: String, required: true },
-        reference: { type: String, required: true },
+        complement: { type: String },
+        reference: { type: String },
         postalCode: { type: String },
-        city: { type: String, required: true },
-        state: { type: String, required: true },
-        country: { type: String, required: true },
+        city: { type: String },
+        state: { type: String },
+        country: { type: String },
         coordinates: {
             latitude: { type: Number },
             longitude: { type: Number }
