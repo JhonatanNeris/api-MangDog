@@ -158,7 +158,7 @@ class PedidoController {
 
     static async postPedido(req, res, next) {
         try {
-            const { nomeCliente, tipoPedido, formaPagamento, desconto, pagamentos, itens } = req.body;
+            const { customerId, nomeCliente, tipoPedido, formaPagamento, desconto, pagamentos, itens, delivery } = req.body;
 
             const clienteId = req.usuario.clienteId;
 
@@ -227,7 +227,8 @@ class PedidoController {
                 valorFiado,
                 itens: itensProcessados,
                 clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
-                numeroPedido
+                numeroPedido,
+                delivery
             };
 
             console.log('Novo pedido:', pedidoCompleto.itens);
