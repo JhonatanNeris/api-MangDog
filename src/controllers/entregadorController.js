@@ -7,11 +7,11 @@ class EntregadorController {
 
         try {
             const resultado = await entregador.find({ clienteId: req.usuario.clienteId });
+            console.log("Listando entregadores do cliente:", resultado);
             res.status(200).json(resultado);
         } catch (error) {
             next(error);
         }
-
     }
 
     static async listarEntregadorPorId(req, res, next) {
@@ -83,6 +83,120 @@ class EntregadorController {
 
         } catch (error) {
             next(error);
+        }
+
+    }
+
+    static async getResumoEntregadores(req, res, next) {
+
+        try {
+            const {
+                busca = '',
+                dataInicio,
+                dataFim,
+                horarioInicio = '00:00',
+                horarioFim = '23:59',
+                status,              // opcional: ex. 'entregue', 'finalizado'...
+                incluirInativos = 'true'
+            } = req.query;
+
+            if (!dataInicio || !dataFim) {
+                return res.status(400).json({ erro: 'dataInicio e dataFim são obrigatórios (YYYY-MM-DD).' });
+            }
+
+            // monta datas com timezone fixo -03:00 (ajuste se necessário)
+            const [hiH, hiM] = horarioInicio.split(':').map(Number);
+            const [hfH, hfM] = horarioFim.split(':').map(Number);
+
+            const inicio = new Date(`${dataInicio}T${String(hiH).padStart(2, '0')}:${String(hiM).padStart(2, '0')}:00-03:00`);
+            const fim = new Date(`${dataFim}T${String(hfH).padStart(2, '0')}:${String(hfM).padStart(2, '0')}:59.999-03:00`);
+
+            // filtros de entregadores
+            const matchEntregador = {};
+            if (busca.trim()) {
+                matchEntregador.$or = [
+                    { nome: { $regex: busca.trim(), $options: 'i' } },
+                    { telefone: { $regex: busca.trim(), $options: 'i' } },
+                ];
+            }
+            if (incluirInativos !== 'true') {
+                matchEntregador.ativo = true;
+            }
+
+            // filtros de pedidos dentro do $lookup (pré-agregados)
+            const matchPedidos = {
+                tipoPedido: 'delivery',
+                createdAt: { $gte: inicio, $lte: fim },
+                status: { $ne: 'cancelado' }
+            };
+            if (status) matchPedidos.status = status;
+
+            const pipeline = [
+                { $match: matchEntregador },
+
+                {
+                    $lookup: {
+                        from: 'pedidos',
+                        let: { entregadorId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $eq: ['$entregadorId', '$$entregadorId'] },
+                                    ...matchPedidos
+                                }
+                            },
+                            {
+                                $group: {
+                                    _id: null,
+                                    quantidade: { $sum: 1 },
+                                    totalPedidos: { $sum: '$valorTotal' },
+                                    totalTaxaEntrega: { $sum: { $ifNull: ['$delivery.deliveryFee', 0] } }
+                                }
+                            }
+                        ],
+                        as: 'resumo'
+                    }
+                },
+
+                // "resumo" vem como array [ {...} ] ou []
+                {
+                    $addFields: {
+                        entregasConcluidas: {
+                            quantidade: { $ifNull: [{ $arrayElemAt: ['$resumo.quantidade', 0] }, 0] },
+                            totalPedidos: { $ifNull: [{ $arrayElemAt: ['$resumo.totalPedidos', 0] }, 0] },
+                            totalTaxaEntrega: { $ifNull: [{ $arrayElemAt: ['$resumo.totalTaxaEntrega', 0] }, 0] },
+                        }
+                    }
+                },
+                {
+                    $addFields: {
+                        mediaPorEntrega: {
+                            $cond: [
+                                { $gt: ['$entregasConcluidas.quantidade', 0] },
+                                { $divide: ['$entregasConcluidas.totalPedidos', '$entregasConcluidas.quantidade'] },
+                                0
+                            ]
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        nome: 1,
+                        telefone: 1,
+                        ativo: 1,
+                        entregasConcluidas: 1,
+                        mediaPorEntrega: 1
+                    }
+                },
+                { $sort: { nome: 1 } }
+            ];
+
+            const data = await entregador.aggregate(pipeline);
+            res.json({ periodo: { inicio, fim }, filtros: { busca, status }, data });
+        } catch (e) {
+            console.error(e);
+            res.status(500).json({ erro: 'Falha ao gerar resumo de entregadores.' });
         }
 
     }
