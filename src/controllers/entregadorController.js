@@ -1,5 +1,6 @@
 import NaoEncontrado from "../erros/NaoEncontrado.js";
 import { entregador } from "../models/index.js";
+import mongoose from "mongoose";
 
 class EntregadorController {
 
@@ -96,7 +97,7 @@ class EntregadorController {
                 dataFim,
                 horarioInicio = '00:00',
                 horarioFim = '23:59',
-                status,              // opcional: ex. 'entregue', 'finalizado'...
+                entregadorId,
                 incluirInativos = 'true'
             } = req.query;
 
@@ -104,15 +105,13 @@ class EntregadorController {
                 return res.status(400).json({ erro: 'dataInicio e dataFim são obrigatórios (YYYY-MM-DD).' });
             }
 
-            // monta datas com timezone fixo -03:00 (ajuste se necessário)
             const [hiH, hiM] = horarioInicio.split(':').map(Number);
             const [hfH, hfM] = horarioFim.split(':').map(Number);
 
             const inicio = new Date(`${dataInicio}T${String(hiH).padStart(2, '0')}:${String(hiM).padStart(2, '0')}:00-03:00`);
             const fim = new Date(`${dataFim}T${String(hfH).padStart(2, '0')}:${String(hfM).padStart(2, '0')}:59.999-03:00`);
 
-            // filtros de entregadores
-            const matchEntregador = {};
+            const matchEntregador = { clienteId: req.usuario.clienteId };
             if (busca.trim()) {
                 matchEntregador.$or = [
                     { nome: { $regex: busca.trim(), $options: 'i' } },
@@ -122,18 +121,12 @@ class EntregadorController {
             if (incluirInativos !== 'true') {
                 matchEntregador.ativo = true;
             }
-
-            // filtros de pedidos dentro do $lookup (pré-agregados)
-            const matchPedidos = {
-                tipoPedido: 'delivery',
-                createdAt: { $gte: inicio, $lte: fim },
-                status: { $ne: 'cancelado' }
-            };
-            if (status) matchPedidos.status = status;
+            if (entregadorId) {
+                matchEntregador._id = new mongoose.Types.ObjectId(entregadorId);
+            }
 
             const pipeline = [
                 { $match: matchEntregador },
-
                 {
                     $lookup: {
                         from: 'pedidos',
@@ -141,42 +134,52 @@ class EntregadorController {
                         pipeline: [
                             {
                                 $match: {
-                                    $expr: { $eq: ['$entregadorId', '$$entregadorId'] },
-                                    ...matchPedidos
+                                    $expr: { $eq: ['$delivery.deliveryPersonId', '$$entregadorId'] },
+                                    clienteId: req.usuario.clienteId,
+                                    tipoPedido: 'delivery',
+                                    createdAt: { $gte: inicio, $lte: fim }
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: 'areaentregas',
+                                    localField: 'delivery.deliveryAreaId',
+                                    foreignField: '_id',
+                                    as: 'area'
+                                }
+                            },
+                            {
+                                $addFields: {
+                                    taxaEntregador: {
+                                        $cond: [
+                                            { $gt: [{ $size: '$area' }, 0] },
+                                            { $ifNull: [{ $arrayElemAt: ['$area.valorPagoEntregador', 0] }, 0] },
+                                            { $ifNull: ['$delivery.deliveryFee', 0] }
+                                        ]
+                                    }
                                 }
                             },
                             {
                                 $group: {
                                     _id: null,
-                                    quantidade: { $sum: 1 },
-                                    totalPedidos: { $sum: '$valorTotal' },
-                                    totalTaxaEntrega: { $sum: { $ifNull: ['$delivery.deliveryFee', 0] } }
+                                    totalEntregas: { $sum: 1 },
+                                    concluidas: { $sum: { $cond: [{ $eq: ['$status', 'concluído'] }, 1, 0] } },
+                                    canceladas: { $sum: { $cond: [{ $eq: ['$status', 'cancelado'] }, 1, 0] } },
+                                    pendentes: { $sum: { $cond: [{ $in: ['$status', ['concluído', 'cancelado']] }, 0, 1] } },
+                                    totalTaxas: { $sum: '$taxaEntregador' }
                                 }
                             }
                         ],
                         as: 'resumo'
                     }
                 },
-
-                // "resumo" vem como array [ {...} ] ou []
                 {
                     $addFields: {
-                        entregasConcluidas: {
-                            quantidade: { $ifNull: [{ $arrayElemAt: ['$resumo.quantidade', 0] }, 0] },
-                            totalPedidos: { $ifNull: [{ $arrayElemAt: ['$resumo.totalPedidos', 0] }, 0] },
-                            totalTaxaEntrega: { $ifNull: [{ $arrayElemAt: ['$resumo.totalTaxaEntrega', 0] }, 0] },
-                        }
-                    }
-                },
-                {
-                    $addFields: {
-                        mediaPorEntrega: {
-                            $cond: [
-                                { $gt: ['$entregasConcluidas.quantidade', 0] },
-                                { $divide: ['$entregasConcluidas.totalPedidos', '$entregasConcluidas.quantidade'] },
-                                0
-                            ]
-                        }
+                        totalEntregas: { $ifNull: [{ $arrayElemAt: ['$resumo.totalEntregas', 0] }, 0] },
+                        entregasConcluidas: { $ifNull: [{ $arrayElemAt: ['$resumo.concluidas', 0] }, 0] },
+                        entregasCanceladas: { $ifNull: [{ $arrayElemAt: ['$resumo.canceladas', 0] }, 0] },
+                        entregasPendentes: { $ifNull: [{ $arrayElemAt: ['$resumo.pendentes', 0] }, 0] },
+                        totalTaxas: { $ifNull: [{ $arrayElemAt: ['$resumo.totalTaxas', 0] }, 0] }
                     }
                 },
                 {
@@ -185,15 +188,18 @@ class EntregadorController {
                         nome: 1,
                         telefone: 1,
                         ativo: 1,
+                        totalEntregas: 1,
                         entregasConcluidas: 1,
-                        mediaPorEntrega: 1
+                        entregasCanceladas: 1,
+                        entregasPendentes: 1,
+                        totalTaxas: 1
                     }
                 },
                 { $sort: { nome: 1 } }
             ];
 
             const data = await entregador.aggregate(pipeline);
-            res.json({ periodo: { inicio, fim }, filtros: { busca, status }, data });
+            res.json({ periodo: { inicio, fim }, filtros: { busca, entregadorId }, data });
         } catch (e) {
             console.error(e);
             res.status(500).json({ erro: 'Falha ao gerar resumo de entregadores.' });
