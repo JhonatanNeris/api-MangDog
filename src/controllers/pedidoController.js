@@ -222,11 +222,15 @@ class PedidoController {
                 return res.status(400).json({ message: 'Informações de entrega ausentes.' });
             }
 
-            const totalComFrete = subtotal + delivery.deliveryFee || 0;
+            // taxa de entrega segura
+            const deliveryFee = (tipoPedido === 'delivery') ? Number(delivery?.deliveryFee || 0) : 0;
+
+            // total com frete
+            const totalComFrete = subtotal + deliveryFee;
 
             // Regra comum: desconto NÃO abate a taxa de entrega
             valorTotal = Math.max(0, (totalComFrete - descontoAplicado)); // Evita valores negativos
-          
+
             // Soma de todos os pagamentos enviados
             const valorPago = (pagamentos || []).reduce((acc, curr) => acc + parseFloat(curr.valor || 0), 0);
 
