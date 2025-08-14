@@ -116,19 +116,27 @@ class ImpressaoController {
 
                 data.push({
                     pedidoId: String(p._id),
-                    numero: p.numero ?? p.sequencia ?? undefined,
+                    numero: p.numeroPedido ?? undefined,
                     estacao: pend.estacao,
                     requisicaoImpressao: new Date(pend.requisicaoImpressao).toISOString(),
                     copias: Math.max(1, Math.min(pend.copias || 1, 5)),
                     payload: {
                         nomeCliente: p.nomeCliente,
+                        numeroPedido: p.numeroPedido,
                         itens: p.itens,
-                        totais: p.totais,
+                        totais: {
+                            subtotal: p.subtotal,
+                            desconto: p.desconto,
+                            valorTotal: p.valorTotal,
+                            taxaEntrega: p.delivery?.deliveryFee ?? 0
+                        },
                         status: p.status,
                         criadoEm: p.createdAt,
                         mesa: p.mesa ?? null,
                         tipoPedido: p.tipoPedido ?? null,
                         pagamentos: p.pagamentos ?? [],
+                        pagamento: p.pagamento ?? null,
+                        delivery: p.delivery ?? null,
                         observacoes: p.obs ?? null
                     }
                 });
