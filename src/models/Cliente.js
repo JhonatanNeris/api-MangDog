@@ -40,9 +40,11 @@ const ClienteSchema = new mongoose.Schema({
     plano: { type: String, enum: ["basico", "bruto"] },
     assinaturaAtiva: { type: Boolean, default: false },
     tokenImpressao: {
-        token: String,
-        criadoEm: Date,
-        ativo: { type: Boolean, default: true }
+        hash: { type: String, default: null, select: false }, // SHA-256 do token
+        criadoEm: { type: Date, default: null },
+        revogadoEm: { type: Date, default: null },
+        ativo: { type: Boolean, default: true },
+        ultimoUsoEm: { type: Date, default: null }
     },
     integracaoIfood: {
         ativo: { type: Boolean, default: false },

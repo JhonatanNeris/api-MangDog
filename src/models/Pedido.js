@@ -62,7 +62,7 @@ const deliverySchema = new mongoose.Schema({
     pickupCode: { type: String },
     deliveryAddress: {
         streetName: { type: String, required: true },
-        streetNumber: { type: String},
+        streetNumber: { type: String },
         neighborhood: { type: String, required: true },
         complement: { type: String },
         reference: { type: String },
@@ -81,11 +81,14 @@ const deliverySchema = new mongoose.Schema({
     deliveryPersonId: { type: mongoose.Schema.Types.ObjectId, ref: "entregadores" }
 });
 
-const impressaoSchema = new mongoose.Schema({
-    imprimir: { type: Boolean, default: false },
-    requisicaoImpressao: { type: Date, default: null },
+const DestinoImpressaoSchema = new mongoose.Schema({
+    estacao: { type: String, enum: ["cozinha", "expedicao"], required: true, index: true },
+    imprimir: { type: Boolean, default: false, index: true },
+    requisicaoImpressao: { type: Date, default: null, index: true },
     impressoEm: { type: Date, default: null },
-});
+    copias: { type: Number, default: 1, min: 1, max: 4 },
+    tentativas: { type: Number, default: 0 }
+}, { _id: false });
 
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
@@ -97,7 +100,7 @@ const pedidoSchema = new mongoose.Schema({
     desconto: { type: Number, default: 0, min: 0 },
     // horario: { type: Date, default: Date.now },
     numeroPedido: { type: Number, required: true },
-    impressao: { type: impressaoSchema },
+    destinosImpressao: { type: [DestinoImpressaoSchema], default: [] },
     delivery: { type: deliverySchema },
     status: {
         type: String,
@@ -144,6 +147,10 @@ const pedidoSchema = new mongoose.Schema({
 }, { timestamps: true, versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 // TESTANDO LINHA ABAIXO
+// Adicionar depois 
+// "destinosImpressao.estacao": 1,
+//   "destinosImpressao.imprimir": 1,
+//   "destinosImpressao.requisicaoImpressao": 1
 pedidoSchema.index({ clienteId: 1, numeroPedido: 1 }, { unique: true });
 
 pedidoSchema.virtual('quantidadeItens').get(function () {
