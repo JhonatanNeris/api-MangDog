@@ -101,10 +101,11 @@ class EntregadorController {
                 incluirInativos = 'true'
             } = req.query;
 
+            /** @type {string} */
             let clienteId = req.usuario.clienteId;
             // Verifica se o clienteId é um ObjectId válido
             if (mongoose.isValidObjectId(clienteId)) {
-                clienteId = new mongoose.Types.ObjectId(clienteId);
+                clienteId = new mongoose.Types.ObjectId(String(clienteId));
             }
 
             // ---- período padrão = hoje ----
