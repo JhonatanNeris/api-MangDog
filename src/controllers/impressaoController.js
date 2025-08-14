@@ -140,6 +140,110 @@ class ImpressaoController {
         }
     }
 
+    static async ackPedidoImpressao(req, res, next) {
+        try {
+            const clienteId = req.impressao?.clienteId; // vem do authImpressao
+            if (!clienteId) return res.status(401).json({ message: "Não autenticado (agente)" });
+
+            const { id } = req.params;
+            const { estacao, status } = req.body || {};
+
+            if (!["cozinha", "expedicao"].includes(estacao)) {
+                return res.status(400).json({ message: "Estação inválida" });
+            }
+            if (!["impresso", "falha"].includes(status)) {
+                return res.status(400).json({ message: "Status inválido" });
+            }
+
+            const p = await pedido.findOne({
+                _id: id,
+                clienteId
+            });
+
+            if (!p) return res.status(404).json({ message: "Pedido não encontrado" });
+
+            const idx = (p.destinosImpressao || []).findIndex(d => d.estacao === estacao);
+            if (idx < 0) {
+                return res.status(400).json({ message: "Estação não configurada para este pedido" });
+            }
+
+            if (status === "impresso") {
+                p.destinosImpressao[idx].imprimir = false;
+                p.destinosImpressao[idx].impressoEm = new Date();
+                p.destinosImpressao[idx].tentativas = 0;
+            } else {
+                p.destinosImpressao[idx].tentativas = (p.destinosImpressao[idx].tentativas || 0) + 1;
+            }
+
+            await p.save();
+            return res.json({ ok: true });
+        } catch (e) {
+            return next(e);
+        }
+    }
+
+    static async enfileirarImpressao(req, res, next) {
+        try {
+            const clienteId = req.usuario?.clienteId; // vem do seu auth do painel
+            if (!clienteId) return res.status(401).json({ message: "Não autenticado (painel)" });
+
+            const { id } = req.params;
+            let { estacoes, copias } = req.body || {};
+
+            console.log("Enfileirar impressão:", { id, estacoes, copias });
+
+            if (!Array.isArray(estacoes) || estacoes.length === 0) {
+                return res.status(400).json({ message: "Informe ao menos uma estação" });
+            }
+            // valida e normaliza estações
+            estacoes = estacoes.filter(e => ["cozinha", "expedicao"].includes(e));
+            if (estacoes.length === 0) {
+                return res.status(400).json({ message: "Nenhuma estação válida" });
+            }
+
+            const clamp = (n) => {
+                const x = Number(n);
+                if (!Number.isFinite(x) || x < 1) return 1;
+                return Math.min(x, 5);
+            };
+            const copiasClamped = copias ? clamp(copias) : undefined;
+
+            const p = await pedido.findOne({
+                // _id: new mongoose.Types.ObjectId(id),
+                // clienteId: new mongoose.Types.ObjectId(clienteId)
+                _id: id,
+                clienteId
+            });
+            if (!p) return res.status(404).json({ message: "Pedido não encontrado" });
+
+            const now = new Date();
+
+            for (const est of estacoes) {
+                const idx = (p.destinosImpressao || []).findIndex(d => d.estacao === est);
+                if (idx >= 0) {
+                    p.destinosImpressao[idx].imprimir = true;
+                    p.destinosImpressao[idx].requisicaoImpressao = now;
+                    p.destinosImpressao[idx].tentativas = 0;
+                    if (copiasClamped) p.destinosImpressao[idx].copias = copiasClamped;
+                } else {
+                    p.destinosImpressao.push({
+                        estacao: est,
+                        imprimir: true,
+                        requisicaoImpressao: now,
+                        impressoEm: null,
+                        copias: copiasClamped || 1,
+                        tentativas: 0
+                    });
+                }
+            }
+
+            await p.save();
+            return res.json({ ok: true, enfileiradoPara: estacoes });
+        } catch (e) {
+            return next(e);
+        }
+    }
+
 }
 
 export default ImpressaoController;
