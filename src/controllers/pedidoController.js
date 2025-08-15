@@ -252,7 +252,12 @@ class PedidoController {
                 itens: itensProcessados,
                 clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
                 numeroPedido,
-                delivery
+                delivery,
+                eventos: [{
+                    tipo: 'pedido criado',
+                    usuario: req.usuario?.nome,
+                    horario: new Date()
+                }]
             };
 
             console.log('Novo pedido:', pedidoCompleto.itens);
@@ -281,7 +286,8 @@ class PedidoController {
 
         try {
             const id = req.params.id
-            const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, req.body, { new: true })
+            const updateData = { $set: req.body, $push: { eventos: { tipo: 'pedido editado', usuario: req.usuario?.nome, horario: new Date() } } };
+            const pedidoEncontrado = await pedido.findOneAndUpdate({ _id: id, clienteId: req.usuario.clienteId }, updateData, { new: true })
 
             //REMOVENDO SOCKET
             // const io = getIO();
@@ -322,6 +328,34 @@ class PedidoController {
             next(error);
         }
 
+    }
+
+    static async marcarPedidoPronto(req, res, next) {
+        try {
+            const id = req.params.id;
+            const pedidoAtualizado = await pedido.findOneAndUpdate(
+                { _id: id, clienteId: req.usuario.clienteId },
+                {
+                    $set: { status: 'pronto' },
+                    $push: {
+                        eventos: {
+                            tipo: 'pedido marcado como pronto',
+                            usuario: req.usuario?.nome,
+                            horario: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            if (!pedidoAtualizado) {
+                return res.status(404).json({ message: "Pedido não encontrado" });
+            }
+
+            res.status(200).json(pedidoAtualizado);
+        } catch (error) {
+            next(error);
+        }
     }
 
     static async deletePedido(req, res, next) {
@@ -371,6 +405,11 @@ class PedidoController {
             }
 
             pedidoEncontrado.status = 'cancelado';
+            pedidoEncontrado.eventos.push({
+                tipo: 'pedido cancelado',
+                usuario: req.usuario?.nome,
+                horario: new Date()
+            });
             // pedido.reembolsado = !!pedido.paymentIntentId;
             await pedidoEncontrado.save();
 
