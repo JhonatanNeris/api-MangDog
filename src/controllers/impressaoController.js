@@ -100,6 +100,10 @@ class ImpressaoController {
                 }
             };
 
+            const cli = await cliente.findById(clienteId)
+
+            console.log(cli)
+
             const docs = await pedido.find(filtro)
                 .sort({ "destinosImpressao.requisicaoImpressao": 1 })
                 .limit(limit)
@@ -115,6 +119,7 @@ class ImpressaoController {
                 if (!pend) continue;
 
                 data.push({
+                    nomeLoja: cli?.loja?.nome,
                     pedidoId: String(p._id),
                     numero: p.numeroPedido ?? undefined,
                     estacao: pend.estacao,
