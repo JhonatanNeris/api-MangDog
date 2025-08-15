@@ -90,6 +90,12 @@ const DestinoImpressaoSchema = new mongoose.Schema({
     tentativas: { type: Number, default: 0 }
 }, { _id: false });
 
+const eventoPedidoSchema = new mongoose.Schema({
+    tipo: { type: String, required: true },
+    usuario: { type: String },
+    horario: { type: Date, default: Date.now }
+}, { _id: false });
+
 const pedidoSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
     idExterno: String,
@@ -142,6 +148,7 @@ const pedidoSchema = new mongoose.Schema({
     pagamento: { type: paymentSchema },
     valorPago: { type: Number, default: 0 },
     valorFiado: { type: Number, default: 0 },
+    eventos: { type: [eventoPedidoSchema], default: [] },
     itens: [itemPedidoSchema],
     clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true },
 }, { timestamps: true, versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
