@@ -19,8 +19,26 @@ class ProdutoController {
     static async getProdutosComGruposComplementos(req, res, next) {
 
         try {
-            const listaProdutos = await produto.find({ clienteId: req.usuario.clienteId }).populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
-            res.status(200).json(listaProdutos)
+            const listaProdutos = await produto.find({ clienteId: req.usuario.clienteId })
+                .collation({ locale: 'pt', strength: 1 })
+                .sort({ nome: 1 })
+                .populate({ path: 'grupoComplementos', populate: { path: 'complementos' } })
+                .lean();
+
+            // injeta grupoId em cada complemento
+            const produtosCompletos = listaProdutos.map((p) => ({
+                ...p,
+                grupoComplementos: (p.grupoComplementos ?? []).map((g) => ({
+                    ...g,
+                    complementos: (g.complementos ?? []).map((c) => ({
+                        ...c,
+                        grupoId: g._id.toString(),
+                    })),
+                })),
+            }));
+
+
+            res.status(200).json(produtosCompletos)
         } catch (error) {
             next(error);
         }
