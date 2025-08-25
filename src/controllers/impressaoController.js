@@ -111,40 +111,48 @@ class ImpressaoController {
 
             const data = [];
             for (const p of docs) {
-                const pend = (p.destinosImpressao || []).find(d =>
+                // const pend = (p.destinosImpressao || []).find(d =>
+                //     estacoes.includes(d.estacao) &&
+                //     d.imprimir === true &&
+                //     new Date(d.requisicaoImpressao) > since
+                // );
+                // if (!pend) continue;
+
+                const pendentes = (p.destinosImpressao || []).filter(d =>
                     estacoes.includes(d.estacao) &&
                     d.imprimir === true &&
                     new Date(d.requisicaoImpressao) > since
                 );
-                if (!pend) continue;
 
-                data.push({
-                    nomeLoja: cli?.loja?.nome,
-                    pedidoId: String(p._id),
-                    numero: p.numeroPedido ?? undefined,
-                    estacao: pend.estacao,
-                    requisicaoImpressao: new Date(pend.requisicaoImpressao).toISOString(),
-                    copias: Math.max(1, Math.min(pend.copias || 1, 5)),
-                    payload: {
-                        nomeCliente: p.nomeCliente,
-                        numeroPedido: p.numeroPedido,
-                        itens: p.itens,
-                        totais: {
-                            subtotal: p.subtotal,
-                            desconto: p.desconto,
-                            valorTotal: p.valorTotal,
-                            taxaEntrega: p.delivery?.deliveryFee ?? 0
-                        },
-                        status: p.status,
-                        criadoEm: p.createdAt,
-                        mesa: p.mesa ?? null,
-                        tipoPedido: p.tipoPedido ?? null,
-                        pagamentos: p.pagamentos ?? [],
-                        pagamento: p.pagamento ?? null,
-                        delivery: p.delivery ?? null,
-                        observacoes: p.obs ?? null
-                    }
-                });
+                for (const pend of pendentes) {
+                    data.push({
+                        nomeLoja: cli?.loja?.nome,
+                        pedidoId: String(p._id),
+                        numero: p.numeroPedido ?? undefined,
+                        estacao: pend.estacao,
+                        requisicaoImpressao: new Date(pend.requisicaoImpressao).toISOString(),
+                        copias: Math.max(1, Math.min(pend.copias || 1, 5)),
+                        payload: {
+                            nomeCliente: p.nomeCliente,
+                            numeroPedido: p.numeroPedido,
+                            itens: p.itens,
+                            totais: {
+                                subtotal: p.subtotal,
+                                desconto: p.desconto,
+                                valorTotal: p.valorTotal,
+                                taxaEntrega: p.delivery?.deliveryFee ?? 0
+                            },
+                            status: p.status,
+                            criadoEm: p.createdAt,
+                            mesa: p.mesa ?? null,
+                            tipoPedido: p.tipoPedido ?? null,
+                            pagamentos: p.pagamentos ?? [],
+                            pagamento: p.pagamento ?? null,
+                            delivery: p.delivery ?? null,
+                            observacoes: p.obs ?? null
+                        }
+                    });
+                }
             }
 
             res.json({ data, serverTime: new Date().toISOString() });
