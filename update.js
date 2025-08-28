@@ -11,26 +11,31 @@ const clienteId = "67db8d48e70b5cdc794de4b6"; // ID do cliente que você deseja 
 // Troque pela string real 
 const DB_CONNECTION_STRING = ""
 
-async function atualizarItens() {
+async function atualizarProdutos() {
   try {
     if (!DB_CONNECTION_STRING) {
       throw new Error("DB_CONNECTION_STRING não definida.");
     }
 
-     await mongoose.connect(DB_CONNECTION_STRING);
+    await mongoose.connect(DB_CONNECTION_STRING);
 
-    await pedido.updateMany(
-      { createdAt: { $exists: false } },
-      [
-        {
-          $set: {
-            createdAt: "$horario"
-          }
+    // Atualiza todos os produtos que ainda não possuem os novos campos
+    const resultado = await produto.updateMany(
+      {
+        $or: [
+          { controlaEstoque: { $exists: false } },
+          { quantidadeEstoque: { $exists: false } }
+        ]
+      },
+      {
+        $set: {
+          controlaEstoque: false,
+          quantidadeEstoque: 0
         }
-      ]
+      }
     );
 
-    console.log(`Cliente atualizado:`);
+    console.log(`Produtos atualizados: ${resultado.modifiedCount}`);
     mongoose.connection.close();
   } catch (error) {
     console.error("Erro ao atualizar:", error);
@@ -38,4 +43,4 @@ async function atualizarItens() {
   }
 }
 
-atualizarItens();
+atualizarProdutos();
