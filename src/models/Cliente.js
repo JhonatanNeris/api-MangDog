@@ -1,5 +1,21 @@
 import mongoose from "mongoose"
 
+const EnderecoSchema = new mongoose.Schema({
+    logradouro: { type: String, required: true },
+    numero: { type: String },
+    bairro: { type: String, required: true },
+    complemento: { type: String, required: true },
+    referencia: { type: String },
+    cep: { type: String, required: true },
+    cidade: { type: String, required: true },
+    estado: { type: String, required: true },
+    pais: { type: String, default: "BR" },
+    coordenadas: {
+        latitude: { type: Number },
+        longitude: { type: Number }
+    }
+})
+
 const ClienteSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
     cnpj: { type: String, unique: true },
@@ -13,22 +29,7 @@ const ClienteSchema = new mongoose.Schema({
         descricao: { type: String },
         telefone: { type: String },
         pedidoMinimo: { type: Number },
-        endereco: {
-            logradouro: { type: String, required: true },
-            numero: { type: String },
-            bairro: { type: String, required: true },
-            complemento: { type: String, required: true },
-            referencia: { type: String },
-            cep: { type: String, required: true },
-            cidade: { type: String, required: true },
-            estado: { type: String, required: true },
-            pais: { type: String, default: "BR" },
-            coordenadas: {
-                latitude: { type: Number },
-                longitude: { type: Number }
-            }
-        }
-
+        endereco: EnderecoSchema,
     },
     stripeCustomerId: { type: String },
     stripeAccountId: { type: String },
