@@ -104,11 +104,17 @@ class ProdutoController {
 
     static async postProdutos(req, res, next) {
 
-        const novoProduto = req.body
+        const { categoria: categoriaId, controlaEstoque, quantidadeEstoque, ...dadosProduto } = req.body
 
         try {
-            const categoriaEncontrada = await categoria.findById(novoProduto.categoria)
-            const produtoCompleto = { ...novoProduto, categoria: { ...categoriaEncontrada._doc }, clienteId: req.usuario.clienteId }
+            const categoriaEncontrada = await categoria.findById(categoriaId)
+            const produtoCompleto = {
+                ...dadosProduto,
+                categoria: { ...categoriaEncontrada._doc },
+                clienteId: req.usuario.clienteId,
+                controlaEstoque: controlaEstoque === true || controlaEstoque === 'true',
+                quantidadeEstoque: Number(quantidadeEstoque) || 0
+            }
 
             const produtoCriado = await produto.create(produtoCompleto)
             res.status(201).json({ message: 'Cadastrado com sucesso!', produto: produtoCriado })
@@ -126,6 +132,8 @@ class ProdutoController {
                 preco,
                 categoria: categoriaId,
                 grupoComplementos,
+                controlaEstoque,
+                quantidadeEstoque,
             } = req.body;
 
             const precoConvertido = parseFloat(preco);
@@ -184,7 +192,9 @@ class ProdutoController {
                 categoria: categoriaEncontrada ? { ...categoriaEncontrada._doc } : null,
                 grupoComplementos: grupoComplementosArray,
                 clienteId: req.usuario.clienteId,
-                imagemUrl
+                imagemUrl,
+                controlaEstoque: controlaEstoque === 'true' || controlaEstoque === true,
+                quantidadeEstoque: Number(quantidadeEstoque) || 0
             };
 
             const produtoCriado = await produto.create(novoProduto);
@@ -207,7 +217,9 @@ class ProdutoController {
                 categoria: categoriaId,
                 grupoComplementos,
                 removerImagem, // opcional: enviado como string 'true' se quiser remover imagem
-                disponivel
+                disponivel,
+                controlaEstoque,
+                quantidadeEstoque
             } = req.body;
 
             const precoConvertido = parseFloat(preco);
@@ -264,17 +276,27 @@ class ProdutoController {
                 imagemUrl = `https://storage.googleapis.com/${bucket.name}/${nomeArquivo}`;
             }
 
+            const updateData = {
+                nome,
+                descricao,
+                preco: precoConvertido,
+                categoria: categoriaEncontrada ? { ...categoriaEncontrada._doc } : null,
+                grupoComplementos: grupoComplementosArray,
+                imagemUrl,
+                disponivel: disponivel === 'true'
+            }
+
+            if (typeof controlaEstoque !== 'undefined') {
+                updateData.controlaEstoque = controlaEstoque === 'true' || controlaEstoque === true
+            }
+
+            if (typeof quantidadeEstoque !== 'undefined') {
+                updateData.quantidadeEstoque = Number(quantidadeEstoque)
+            }
+
             await produto.findOneAndUpdate(
                 { _id: id, clienteId: req.usuario.clienteId },
-                {
-                    nome,
-                    descricao,
-                    preco: precoConvertido,
-                    categoria: categoriaEncontrada ? { ...categoriaEncontrada._doc } : null,
-                    grupoComplementos: grupoComplementosArray,
-                    imagemUrl,
-                    disponivel: disponivel === 'true'
-                },
+                updateData,
             );
 
             res.status(200).json({ message: "Produto atualizado!" });

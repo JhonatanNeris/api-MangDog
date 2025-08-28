@@ -1,4 +1,4 @@
-import { pedido, configuracoes } from '../models/index.js';
+import { pedido, configuracoes, produto } from '../models/index.js';
 import NaoEncontrado from "../erros/NaoEncontrado.js";
 import RequisicaoIncorreta from '../erros/RequisicaoIncorreta.js';
 
@@ -157,88 +157,92 @@ class PedidoController {
     }
 
     static async postPedido(req, res, next) {
+        const session = await mongoose.startSession();
+        session.startTransaction();
         try {
             const { customerId, nomeCliente, tipoPedido, formaPagamento, desconto, pagamentos, itens, delivery } = req.body;
-
             const clienteId = req.usuario.clienteId;
-
             if (!clienteId) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(500).json({ message: 'inválido' });
             }
-
-            // Incrementa a sequência com segurança
             const configAtualizada = await configuracoes.findOneAndUpdate(
                 { clienteId },
                 { $inc: { "pedidos.sequencia": 1 } },
-                { new: true }
+                { new: true, session }
             );
-
             if (!configAtualizada) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(500).json({ erro: "Configuração não encontrada." });
             }
-
             const numeroPedido = configAtualizada.pedidos.sequencia;
-
             let valorTotal = 0;
-            let descontoAplicado = parseFloat(desconto) || 0; // Garante que é um número válido
-            let subtotal = 0
-
-            // Processar os itens e calcular o valor total
-            const itensProcessados = itens.map((item) => {
+            let descontoAplicado = parseFloat(desconto) || 0;
+            let subtotal = 0;
+            const itensProcessados = [];
+            for (const item of itens) {
                 let valorComplementos = 0;
-
                 if (item.complementos && item.complementos.length > 0) {
                     item.complementos = item.complementos.map((complemento) => {
                         complemento.precoTotal = complemento.preco * complemento.quantidade;
                         valorComplementos += complemento.precoTotal;
                         return complemento;
                     });
-
                     item.totalItem = (item.preco + valorComplementos);
                 } else {
                     item.totalItem = item.preco;
                 }
-
                 item.precoTotal = item.totalItem * item.quantidade;
                 subtotal += item.precoTotal;
-                return item;
-            });
-
-            // Verifica se o tipo de pedido é delivery e se há informações de entrega
+                itensProcessados.push(item);
+                const produtoDb = await produto.findOne({ _id: item._id, clienteId }).session(session);
+                if (!produtoDb) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return res.status(404).json({ message: 'Produto não encontrado' });
+                }
+                if (produtoDb.controlaEstoque) {
+                    const atualizado = await produto.findOneAndUpdate(
+                        { _id: item._id, clienteId, quantidadeEstoque: { $gte: item.quantidade } },
+                        { $inc: { quantidadeEstoque: -item.quantidade } },
+                        { new: true, session }
+                    );
+                    if (!atualizado) {
+                        await session.abortTransaction();
+                        session.endSession();
+                        return res.status(400).json({ message: `Estoque insuficiente para o produto ${produtoDb.nome}` });
+                    }
+                }
+            }
             if (tipoPedido === 'delivery' && delivery) {
-                // Verifica se a área de entrega foi selecionada
                 if (!delivery.deliveryAreaId) {
+                    await session.abortTransaction();
+                    session.endSession();
                     return res.status(400).json({ message: 'Área de entrega não selecionada.' });
                 }
-                // Verifica se o endereço de entrega foi preenchido
                 if (!delivery.deliveryAddress || !delivery.deliveryAddress.streetName || !delivery.deliveryAddress.neighborhood) {
+                    await session.abortTransaction();
+                    session.endSession();
                     return res.status(400).json({ message: 'Endereço de entrega incompleto, preencha bairo e logradouro' });
                 }
-                // Verifica se a taxa de entrega foi definida
                 if (delivery.deliveryFee === undefined || delivery.deliveryFee < 0) {
+                    await session.abortTransaction();
+                    session.endSession();
                     return res.status(400).json({ message: 'Taxa de entrega inválida.' });
                 }
             } else if (tipoPedido === 'delivery') {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(400).json({ message: 'Informações de entrega ausentes.' });
             }
-
-            // taxa de entrega segura
             const deliveryFee = (tipoPedido === 'delivery') ? Number(delivery?.deliveryFee || 0) : 0;
-
-            // total com frete
             const totalComFrete = subtotal + deliveryFee;
-
-            // Regra comum: desconto NÃO abate a taxa de entrega
-            valorTotal = Math.max(0, (totalComFrete - descontoAplicado)); // Evita valores negativos
-
-            // Soma de todos os pagamentos enviados
+            valorTotal = Math.max(0, (totalComFrete - descontoAplicado));
             const valorPago = (pagamentos || []).reduce((acc, curr) => acc + parseFloat(curr.valor || 0), 0);
-
             const valorFiado = valorTotal - valorPago;
-
-            console.log(subtotal, valorTotal)
-
-            // Criar o pedido com o clienteId convertido
+            console.log(subtotal, valorTotal);
             const pedidoCompleto = {
                 nomeCliente,
                 subtotal,
@@ -250,34 +254,26 @@ class PedidoController {
                 valorPago,
                 valorFiado,
                 itens: itensProcessados,
-                clienteId: req.usuario.clienteId, // Aqui você usa o clienteId convertido
+                clienteId: req.usuario.clienteId,
                 numeroPedido,
                 delivery,
-                eventos: [{
-                    tipo: 'pedido criado',
-                    usuario: req.usuario?.nome,
-                    horario: new Date()
-                }]
+                eventos: [{ tipo: 'pedido criado', usuario: req.usuario?.nome, horario: new Date() }]
             };
-
             console.log('Novo pedido:', pedidoCompleto.itens);
-
-            // Usar o modelo de pedido para criar o novo pedido
-            const pedidoCriado = await pedido.create(pedidoCompleto);
-
-
-            //REMOVENDO SOCKET
-            // const io = getIO();
-            // io.to(req.usuario.clienteId).emit("pedido:novo", pedidoCriado);
-
-            if (!pedidoCriado) {
+            const pedidoCriadoArr = await pedido.create([pedidoCompleto], { session });
+            if (!pedidoCriadoArr || !pedidoCriadoArr[0]) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(500).json({ message: 'Erro ao criar o pedido no banco de dados.' });
             }
-
-            res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriado });
+            await session.commitTransaction();
+            res.status(201).json({ message: 'Pedido criado com sucesso!', pedido: pedidoCriadoArr[0] });
         } catch (error) {
-            console.error("Erro ao criar pedido:", error);
+            await session.abortTransaction();
+            console.error('Erro ao criar pedido:', error);
             next(error);
+        } finally {
+            session.endSession();
         }
     }
 

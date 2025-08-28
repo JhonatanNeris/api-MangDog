@@ -12,7 +12,9 @@ const produtoSchema = new mongoose.Schema({
     categoria: { type: categoriaSchema, required: [true, "A categoria do produto é obrigatória."] },
     grupoComplementos: [{type: mongoose.Schema.Types.ObjectId, ref: "grupoComplementos"}],
     disponivel: { type: Boolean, default: true },
-    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true }, 
+    controlaEstoque: { type: Boolean, default: false },
+    quantidadeEstoque: { type: Number, min: 0, default: 0 },
+    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: "cliente", required: true },
 }, { versionKey: false });
 
 const produto = mongoose.model("produtos", produtoSchema);
