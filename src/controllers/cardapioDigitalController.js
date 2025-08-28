@@ -8,7 +8,7 @@ class CardapioDigitalController {
             const slug = req.params.slug
 
             // Buscar cliente pelo slug
-            const clienteEncontrado = await cliente.findOne({ slug });
+            const clienteEncontrado = await cliente.findOne({ "loja.slug": slug });
 
             if (!clienteEncontrado) {
                 throw new Error("Cliente não encontrado com esse slug.");
